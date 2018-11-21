@@ -18,11 +18,13 @@ ROOT_DIR_WIN = 'T:\\\\'
 ROOT_DIR_POSIX = '/Volumes/Quantum2/'
 PLATFORM = None
 
+
 def clear():
     # check and make call for specific operating system
     _ = call('clear' if os.name =='posix' else 'cls')
 
 
+# Begin prompt for user input here
 def print_intro():
 
     print("=========================================================== " + "\n"
@@ -64,25 +66,6 @@ def print_intro():
         except ValueError:
             print("ValueError, try again")
             continue
-
-    # while True:
-    #     st = str(input("Time to Start Job Submits, 24hr Clock (YYYY,M,D,h,m): "))
-    #     try:
-    #         if st.find(",") == 0:
-    #             print("Start Time values must be separated with a comma, try again.")
-    #             continue
-    #         else:
-    #             st = st.replace(" ","").split(",")
-    #             present = datetime.now()
-    #             start_time = datetime(int(st[0]), int(st[1]), int(st[2]), int(st[3]), int(st[4]))
-    #             if start_time < present:
-    #                 print("Start Time must be a time in the future, try again.")
-    #                 continue
-    #             else:
-    #                 break
-    #     except ValueError or IndexError:
-    #         print("{} is not a valid entry for start time, try again.".format(st))
-    #         continue
 
     while True:
         total_duration = str(input("Total Duration (hrs) : "))
@@ -162,7 +145,7 @@ def print_intro():
         print("Total Batch Duration (hrs) : " + str(total_duration))
         print("Submission Frequency (min) : " + str(submit_frequency))
         print("Jobs per Submission : " + str(jobs_per_submit))
-        print("Jobs in Rotation : " + str(sources_in_rotation))
+        print("Total Jobs in Batch : " + str(sources_in_rotation))
         print("Watch Folder Path (Win): " + str(source_dir))
         print("Vantage Job ID : " + str(target_workflow_id))
 
@@ -193,6 +176,7 @@ def platform_check():
     return PLATFORM
 
 
+# validate and clean user input for the start time
 def clean_datetimes(date_str):
 
     date_str = date_str.replace(",", "")
@@ -266,29 +250,40 @@ def check_job_queue(target_workflow_id):
             active_jobs_json = get_job_status.json()
             active_job_count = len(active_jobs_json['Jobs'])
 
-            if active_job_count >= 10 and job_check_count % 5 != 0:
+            print("active job count: " + str(active_job_count))
+            print("job check count: " + str(job_check_count))
+            print("")
+
+            if active_job_count <= 10:
+                break
+
+            elif active_job_count >= 10 and \
+                job_check_count == 0:
+
+                print('\n====================================================')
+                print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
+                print("There are currently {} active jobs in this workflow.\n".format(active_job_count) + "Job submission will pause until the job queue clears up.")
+                print('====================================================\n')
+
+            elif active_job_count >= 10 and \
+                    job_check_count > 0 and \
+                    job_check_count % 5 == 0:
 
                 print('\n===========================================')
-                print("Current time: " + str(strftime('%H:%M:%S', localtime())))
-                print("There are currently {} active jobs in this workflow.\n".format(active_job_count)) + "Job submission will pause until the job queue clears up."
+                print("***Job Queue Update***\n" +
+                    str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
+                print("{} active jobs remain.".format(active_job_count))
                 print('===========================================\n')
 
-
-                time.sleep(1)
-                job_check_count += 1
-
-                continue
-
-            elif active_job_count >= 10 and job_check_count % 5 == 0:
-
-                print('\n===========================================')
-                print("***Job Queue Update***\n"
-                    "Current time: " + str(strftime('%H:%M:%S', localtime())))
-                print("{} active jobs remain.\n".format(active_job_count))
-                print('===========================================\n')
+            elif job_check_count >= 0 and \
+                job_check_count % 5 is not 0:
+                pass
 
             else:
-                break
+                continue
+
+            time.sleep(60)
+            job_check_count += 1
 
         except ConnectionError:
             print('Error: Please verify that the Vantage SDK Service is reachable at ' + ROOT_URI)
@@ -368,22 +363,20 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
     file_list = [x.name for x in p.glob('*.mov') if x.is_file()]
     sorted_list = sorted(file_list)
 
-
     # Submit batches of jobs at set intervals for the duration specified.
     for files_submitted in range(int(total_jobs)):
 
         try:
             file = sorted_list[list_number]
-            file_match = re.match('TEST_' + r'([0-9]{7})'+'.mov', file)
+            file_match = re.match(r'([0-9]{7})'+'.mov', file)
 
             if files_submitted != 0 and files_submitted % jobs_per_submit == 0:
                 print('Waiting ' + str(submit_frequency) + ' minutes\n')
                 time.sleep(submit_frequency * 60)
+                check_job_queue(target_workflow_id)
 
                 print('Submitting Files ' + str(files_submitted + 1) + " to " + str(jobs_per_submit + files_submitted) + ' of ' +
                     str(int(total_jobs)) + ' at ' + str(strftime('%H:%M:%S', localtime())))
-
-                check_job_queue(target_workflow_id)
 
             if file_match is not None:
                 print("Submitting: " + file)
@@ -393,9 +386,11 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
             else:
                 print("Skipping: " + file)
                 files_skipped += 1
+                list_number += 1
+                continue
 
         except IndexError:
-            print("FUCK THIS")
+            print("INDEX ERROR")
             jobs_complete(files_submitted, files_skipped)
             break
 
