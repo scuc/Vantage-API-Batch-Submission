@@ -13,7 +13,7 @@ do so for as long as the user has specified.
 **Use case examples:** <br>
 A company may have a large archive (maybe 100K or more) of video files that are all in a .MOV container and they need conversion to a .MP4 container. It is impossible to submit tens of thousands of files to a watch folder all at the same time, as it would overload the system. Likewise, submtting the archive to the watchfolder in small batches is not practical either because it requires constant manual attention. The script can automate the process  by submiting files to the watch folder at set intervals, and it will check the job queue before each submission to ensue that the system is not getting overloaded. 
 
-While this script is primarily intended for automated processing of large file sets, it can also be used for stress testing. The script can submit files in large regular batches in order to determine the saturation point of the system - eg. how many jobs can it handle at any one time and at watch rate can it handle the submission of new jobs. 
+While this script is primarily intended for automated processing of large file sets, it can also be used for stress testing. The script can submit files in large batches in order to determine the saturation point of the system - eg. how many jobs can it handle at any one time and at what rate can it handle the submission of new jobs. 
 
 
 ## Prerequisites 
