@@ -6,7 +6,7 @@ import vantage_api_auto_submit as vn
 from time import strftime
 
 
-# set the global varibales for the script.
+'''set the varibales for the script.'''
 
 def vantage_main():
 
@@ -33,7 +33,6 @@ def vantage_main():
     print("Jobs per Submission : " + str(jobs_per_submit))
     print("Jobs in Rotation : " + str(sources_in_rotation))
     print("Watch Folder Path (Win): " + str(source_dir))
-    # print("Watch Folder Path (Mac): " + str(source_dir_mac))
     print("Vantage Job ID : " + str(target_workflow_id))
 
     print('')
