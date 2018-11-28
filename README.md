@@ -5,16 +5,15 @@ A Python script to make batch submissions to Vantage using a REST API.
 
 ## Project Description 
 
-This script is for automating the submission of a large batch of video files in Telestream Vantage software. When executed, the script will prompt the user for a series of input: start time, duration, frequency, jobs per submission, total jobs to process, watch folder path, and
+This script is for automating the submission of a large batch of video files to the Telestream Vantage software. When executed, the script will prompt the user for a series of input: start time, duration, frequency, jobs per submission, total jobs to process, watch folder path, and
 the Vantage job ID. Once the input is submitted the script will begin
 submitting files for processing in the workflow, and continue to
 do so for as long as the user has specified. 
 
-**Use case examples:** 
-A company may have a large archive (maybe 100K or more) of video files that are all in a .MOV container and they need conversion to a .MP4 container. It is impossible to submit tens of thousands of files to a  watch folder at the same time, as it would overload the system. Likewise, submtting the archive to the watchfolder in small batches is not practical either because it require constant manual attention. 
+**Use case examples:** <br>
+A company may have a large archive (maybe 100K or more) of video files that are all in a .MOV container and they need conversion to a .MP4 container. It is impossible to submit tens of thousands of files to a watch folder all at the same time, as it would overload the system. Likewise, submtting the archive to the watchfolder in small batches is not practical either because it requires constant manual attention. 
 
-While this script is primarily intended for autmated processing of large file sets, it can also be used for stress testing of a Vantage farm. the script can submit files in large regular batches in order
-to determine the saturation point of the system - how many jobs can it handle at any one time. 
+While this script is primarily intended for automated processing of large file sets, it can also be used for stress testing of a Vantage system. The script can submit files in large regular batches in order to determine the saturation point of the system - how many jobs can it handle at any one time. 
 
 
 ## Prerequisites 
