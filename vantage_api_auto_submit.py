@@ -24,7 +24,7 @@ def clear():
     _ = call('clear' if os.name =='posix' else 'cls')
 
 
-# =================== Begin prompt for user input here =================== #
+# =================== BEGIN PROMPT FOR USER INPUT =================== #
 
 def print_intro():
 
@@ -366,7 +366,6 @@ def jobs_complete(files_submitted, files_skipped):
 
 def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, target_workflow_id):
 
-    # Determine the total number of jobs to submit
     jobs_per_hour = (60 / submit_frequency) * jobs_per_submit
     total_jobs = jobs_per_hour * total_duration
 
@@ -422,6 +421,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
 
 
 def job_submit(target_workflow_id, source_dir, file):
+    '''Submit the file to the workflow, using the REST API.'''
 
     try:
         job_get = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
@@ -451,7 +451,5 @@ def job_submit(target_workflow_id, source_dir, file):
               target_workflow_id + '/Submit with the following json blob:')
         print(job_blob)
         raw_input("Once SDK Service is verified, Press enter to continue")
-
-    # return JOB_LIST
 
 
