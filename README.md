@@ -47,6 +47,10 @@ Edit these variables:
 
 `ROOT_DIR_POSIX = '/Volumes/Quantum2/'`
 
+Also, the regex's included in the `api_submit` function are set up
+to check for Quicktime files with a .mov file extension. If working
+with another file type, this portion of the code will need to be modified. 
+
 Execute commands: 
 
 1. Install Python 3.6 or higher and add it to you PATH.
