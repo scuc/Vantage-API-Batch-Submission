@@ -20,16 +20,17 @@ PLATFORM = None
 
 
 def clear():
-    # check and make call for specific operating system
+    '''check and make call for specific operating system'''
     _ = call('clear' if os.name =='posix' else 'cls')
 
 
-# Begin prompt for user input here
+# =================== Begin prompt for user input here =================== #
+
 def print_intro():
 
     print("=========================================================== " + "\n"
           + '''           Vantage Workflow Submission Script \n
-                Version 1.1, Nov 14, 2018\n
+                Version 1.1, December 03, 2018\n
     This script will use the Vantage REST API to submit files\n
     to a workflow at set intervals. The user defines the \n
     duration, frequency, and total number of jobs submitted.''' + "\n"
@@ -172,13 +173,13 @@ def print_intro():
 
 
 def platform_check():
+    '''Get the OS of the server executing the code.'''
     PLATFORM = platform.system()
     return PLATFORM
 
 
-# validate and clean user input for the start time
 def clean_datetimes(date_str):
-
+    '''Validate and clean user input for the start time.'''
     date_str = date_str.replace(",", "")
 
     while True:
@@ -211,12 +212,14 @@ def clean_datetimes(date_str):
 
 
 def make_posix_path(source_dir):
+    '''Create a valid POSIX path for the watch folder.'''
     source_dir_list = re.findall(r"[\w']+", source_dir)
     posix_path = ROOT_DIR_POSIX + "/".join(source_dir_list[1:])
     return posix_path
 
 
 def path_validation(source_dir):
+    '''Validate the user input for the watch folder file path.'''
     os_platform = platform_check()
     source_dir_list = re.findall(r"[\w']+", source_dir)
 
@@ -232,15 +235,12 @@ def path_validation(source_dir):
         valid_path = False
     else:
         valid_path = True
-        # source_dir = str(windows_path)
-        # if source_dir.endswith('\\') is not True:
-        #     source_dir += "\\"
 
     return valid_path
 
 
 def countdown(start_time):
-
+    '''Create a visible countdownin the terminal window based on the start time of the user input.'''
     present = datetime.now()
     td = start_time - present
     tds = td.total_seconds()
@@ -261,6 +261,7 @@ def countdown(start_time):
 
 
 def check_job_queue(target_workflow_id):
+    '''Check for the number of the jobs running  in the given workflow, prevent the script from overloading the Vantage system.'''
 
     job_check_count = 0
 
@@ -315,30 +316,32 @@ def check_job_queue(target_workflow_id):
 
     return
 
-# def check_job_state(files_submitted, jobs_per_submit):
+def check_job_state(files_submitted, jobs_per_submit):
+    '''CURRENTLY UNSUSED -- Count the total number of sucessful and failed jobs at the end of the batch.'''
 
-#     failed_jobs = 0
-#     sucessful_jobs = 0
+    failed_jobs = 0
+    sucessful_jobs = 0
 
-#     for job in job_list:
-#         if files_submitted >= jobs_per_submit * 2:
-#             job_status_get = requests.get(ROOT_URI + '/REST/Jobs/' + job_id)
-#             job_state = job_status_get.json()
+    for job in job_list:
+        if files_submitted >= jobs_per_submit * 2:
+            job_status_get = requests.get(ROOT_URI + '/REST/Jobs/' + job_id)
+            job_state = job_status_get.json()
 
-#             if job_state['State'] == 0:
-#                 pass
-#             elif job_state['State'] == 4:
-#                 failed_jobs += failed_jobs + 1
-#             elif job_state['State'] == 5:
-#                 sucessful_jobs += sucessful_jobs + 1
-#             else:
-#                 pass
-#         else:
-#             pass
+            if job_state['State'] == 0:
+                pass
+            elif job_state['State'] == 4:
+                failed_jobs += failed_jobs + 1
+            elif job_state['State'] == 5:
+                sucessful_jobs += sucessful_jobs + 1
+            else:
+                pass
+        else:
+            pass
 
-#     return failed_jobs, sucessful_jobs
+    return failed_jobs, sucessful_jobs
 
 def jobs_log():
+    '''CURRENTLY UNUSED - create a log of output from the script.'''
     log_name = str(start_time) + "_VantageAPI_Log.txt"
     logging.basicConfig(
         filename=log_name,
@@ -348,7 +351,7 @@ def jobs_log():
 
 
 def jobs_complete(files_submitted, files_skipped):
-
+    '''Print a summary message in the terminal window at the end of the batch run.'''
     print('\n===========================================')
     print('\nJobs Complete!')
     print(str(files_submitted - files_skipped) + ' files were submitted')
