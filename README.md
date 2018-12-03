@@ -34,7 +34,18 @@ While this script is primarily intended for automated processing of large file s
 
 ## Getting Started
 
-After the prerequisites are downloaded and installed. 
+After the prerequisites are downloaded and installed, set up
+the global variables for your local environment. 
+
+Open the file - `vantage_api_auto_submit.py` in a text editor. 
+
+Edit these variables: 
+
+`ROOT_URI = 'http://LIGHTSPEED1:8676'`
+
+`ROOT_DIR_WIN = 'T:\\\\'`
+
+`ROOT_DIR_POSIX = '/Volumes/Quantum2/'`
 
 Execute commands: 
 
