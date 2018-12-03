@@ -6,7 +6,7 @@ import vantage_api_auto_submit as vn
 from time import strftime
 
 
-'''set the varibales for the script.'''
+# set the variables for the script.
 
 def vantage_main():
 
@@ -37,6 +37,8 @@ def vantage_main():
 
     print('')
     print('===========================================================')
+
+    vn.countdown(start_time)
 
     vn.api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, target_workflow_id)
 

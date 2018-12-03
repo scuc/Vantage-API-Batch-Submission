@@ -19,8 +19,12 @@ ROOT_DIR_POSIX = '/Volumes/Quantum2/'
 PLATFORM = None
 
 
-# ================= PROMPT FOR USER INPUT BEGINS HERE =================
+def clear():
+    # check and make call for specific operating system
+    _ = call('clear' if os.name =='posix' else 'cls')
 
+
+# Begin prompt for user input here
 def print_intro():
 
     print("=========================================================== " + "\n"
@@ -114,6 +118,7 @@ def print_intro():
         else:
             break
 
+
     while True:
         target_workflow_id = str(input("The Vantage Workflow ID : "))
         try:
@@ -166,20 +171,14 @@ def print_intro():
     return [start_time, total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, target_workflow_id]
 
 
-def clear():
-    '''check and make call to clear cli screen for a specific operating system'''
-    _ = call('clear' if os.name =='posix' else 'cls')
-
-
 def platform_check():
-    '''check for specific operating system'''
     PLATFORM = platform.system()
     return PLATFORM
 
 
-
+# validate and clean user input for the start time
 def clean_datetimes(date_str):
-    '''validate and clean user input for the start time'''
+
     date_str = date_str.replace(",", "")
 
     while True:
@@ -233,12 +232,35 @@ def path_validation(source_dir):
         valid_path = False
     else:
         valid_path = True
+        # source_dir = str(windows_path)
+        # if source_dir.endswith('\\') is not True:
+        #     source_dir += "\\"
 
     return valid_path
 
 
+def countdown(start_time):
+
+    present = datetime.now()
+    td = start_time - present
+    tds = td.total_seconds()
+
+    while tds > 0:
+        mins, secs = divmod(tds, 60)
+        hours, mins = divmod(mins, 60)
+        timeformat = '{:02d}:{:02d}:{:02d}'.format(int(hours), int(mins), int(secs))
+        print("Job Sumission Starts In: " + str(timeformat), end='\r')
+        time.sleep(1)
+        tds -= 1
+    time.sleep(1)
+    clear()
+    print("")
+    print("\n========= Starting Now!!! ==========\n")
+    print("")
+    return
+
+
 def check_job_queue(target_workflow_id):
-    '''check the vantage job queue and count active jobs'''
 
     job_check_count = 0
 
@@ -317,7 +339,6 @@ def check_job_queue(target_workflow_id):
 #     return failed_jobs, sucessful_jobs
 
 def jobs_log():
-    '''CURRENTLY UNUSED - create a log file for the batch'''
     log_name = str(start_time) + "_VantageAPI_Log.txt"
     logging.basicConfig(
         filename=log_name,
@@ -327,7 +348,7 @@ def jobs_log():
 
 
 def jobs_complete(files_submitted, files_skipped):
-    '''summary of the batch submission, appears at end of the batch job'''
+
     print('\n===========================================')
     print('\nJobs Complete!')
     print(str(files_submitted - files_skipped) + ' files were submitted')
@@ -337,12 +358,12 @@ def jobs_complete(files_submitted, files_skipped):
     # print(str(sucessful_jobs) + ' files were sucessful.')
 
 
-#================= API SUBMIT STARTS HERE ====================== #
+# ================= API SUBMIT STARTS HERE ====================== #
 
 
 def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, target_workflow_id):
-    '''Determine the total number of jobs to submit'''
 
+    # Determine the total number of jobs to submit
     jobs_per_hour = (60 / submit_frequency) * jobs_per_submit
     total_jobs = jobs_per_hour * total_duration
 
@@ -363,7 +384,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
     file_list = [x.name for x in p.glob('*.mov') if x.is_file()]
     sorted_list = sorted(file_list)
 
-    '''Submit batches of jobs at set intervals for the duration specified.'''
+    # Submit batches of jobs at set intervals for the duration specified.
     for files_submitted in range(int(total_jobs)):
 
         try:
@@ -398,7 +419,6 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
 
 
 def job_submit(target_workflow_id, source_dir, file):
-    '''Makes the REST API call to submit the job to Vantage'''
 
     try:
         job_get = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
@@ -428,4 +448,7 @@ def job_submit(target_workflow_id, source_dir, file):
               target_workflow_id + '/Submit with the following json blob:')
         print(job_blob)
         raw_input("Once SDK Service is verified, Press enter to continue")
+
+    # return JOB_LIST
+
 
