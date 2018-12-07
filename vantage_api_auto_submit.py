@@ -386,9 +386,8 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
     file_list = [x.name for x in p.glob('*.mov') if x.is_file()]
     sorted_list = sorted(file_list)
 
-    # Submit batches of jobs at set intervals for the duration specified.
     for files_submitted in range(int(total_jobs)):
-
+    '''Submit batches of jobs at set intervals for the duration specified.'''
         try:
             file = sorted_list[list_number]
             file_match = re.match(r'([0-9]{7})'+'.mov', file)
@@ -413,8 +412,6 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
                 continue
 
         except IndexError:
-            print("INDEX ERROR")
-            jobs_complete(files_submitted, files_skipped)
             break
 
     jobs_complete(files_submitted, files_skipped)
