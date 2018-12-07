@@ -276,10 +276,10 @@ def check_job_queue(target_workflow_id):
             print("job check count: " + str(job_check_count))
             print("")
 
-            if active_job_count <= 10:
+            if active_job_count <= 15:
                 break
 
-            elif active_job_count >= 10 and \
+            elif active_job_count >= 15 and \
                 job_check_count == 0:
 
                 print('\n====================================================')
@@ -387,7 +387,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
     sorted_list = sorted(file_list)
 
     for files_submitted in range(int(total_jobs)):
-    '''Submit batches of jobs at set intervals for the duration specified.'''
+        '''Submit batches of jobs at set intervals for the duration specified.'''
         try:
             file = sorted_list[list_number]
             file_match = re.match(r'([0-9]{7})'+'.mov', file)
