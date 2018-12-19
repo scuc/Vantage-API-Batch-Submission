@@ -177,6 +177,16 @@ def platform_check():
     PLATFORM = platform.system()
     return PLATFORM
 
+def api_check():
+    '''Get a listing of nodes in the domain to use incase one goes down.'''
+    get_services = requests.get(ROOT_URI + '/REST/Services')
+    active_hosts_json = get_services.json()
+
+    for host in active_hosts_json:
+        if host["Servicenam"] is not "SDK":
+            pass
+        else:
+            SDK_list.append(host["Machine"])
 
 def clean_datetimes(date_str):
     '''Validate and clean user input for the start time.'''
@@ -422,7 +432,7 @@ def job_submit(target_workflow_id, source_dir, file):
 
     try:
         job_get = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
-    except TypeError:
+    except TimeoutError or ConnectionError:
         print(
             'Error: Please verify that the Vantage SDK Service is reachable at ' + ROOT_URI)
         print('REST get request: ' + ROOT_URI +
@@ -441,7 +451,7 @@ def job_submit(target_workflow_id, source_dir, file):
         # JOB_LIST.append(job_id)
         # print(job_id)
 
-    except ConnectionError:
+    except TimeoutError or ConnectionError:
         print(
             'Error: Please verify that the Vantage SDK Service is reachable at ' + ROOT_URI)
         print('REST post request: ' + ROOT_URI + '/REST/Workflows/' +
