@@ -8,6 +8,7 @@ import requests
 import time
 
 from datetime import datetime
+from itertools import product
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from subprocess import call
 from time import localtime, strftime
