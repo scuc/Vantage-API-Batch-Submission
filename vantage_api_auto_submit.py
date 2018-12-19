@@ -179,14 +179,29 @@ def platform_check():
 
 def api_check():
     '''Get a listing of nodes in the domain to use incase one goes down.'''
-    get_services = requests.get(ROOT_URI + '/REST/Services')
-    active_hosts_json = get_services.json()
+    sdk_list = []
+    machine_name_list = []
 
-    for host in active_hosts_json:
-        if host["Servicenam"] is not "SDK":
+    get_machine_names = requests.get(ROOT_URI + '/REST/Machines')
+    active_machines_json = get_machine_names.json()
+    get_services = requests.get(ROOT_URI + '/REST/Services')
+    active_services_json = get_services.json()
+
+    for service in active_services_json["Services"]:
+        if service["ServiceTypeName"].lower() != "sdk":
             pass
         else:
-            SDK_list.append(host["Machine"])
+            sdk_list.append(service["Machine"])
+
+    machines = [[d['Identifier'],d['Name']] for d in active_machines_json["Machines"]]
+
+    for a,b in product(sdk_list,machines):
+        if a == b[0]:
+            machine_name_list.append(b[1])
+        else:
+            pass
+
+    return machine_name_list
 
 def clean_datetimes(date_str):
     '''Validate and clean user input for the start time.'''
