@@ -448,12 +448,22 @@ def job_submit(target_workflow_id, source_dir, file):
 
     try:
         job_get = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
-    except TimeoutError or ConnectionError:
-        print(
-            'Error: Please verify that the Vantage SDK Service is reachable at ' + ROOT_URI)
-        print('REST get request: ' + ROOT_URI +
-              '/REST/Workflows/' + target_workflow_id + '/JobInputs')
-        raw_input("Once SDK Service is verified, Press enter to continue")
+
+    except (TimeoutError,ConnectionError):
+
+        try:
+            machine_name_list = api_check()
+            sdk_endpoint = machine_name_list[0]
+            ROOT_URI = "http://" + sdk_endpoint + ":8676"
+            job_get = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
+
+        except:
+            print(
+                'Error on GET: Please verify that the Vantage SDK Service is reachable at ' + ROOT_URI)
+            print('REST get request: ' + ROOT_URI +
+                  '/REST/Workflows/' + target_workflow_id + '/JobInputs')
+            raw_input("Once SDK Service is verified, Press enter to continue")
+
 
     job_blob = job_get.json()
     job_blob['JobName'] = file
@@ -464,15 +474,13 @@ def job_submit(target_workflow_id, source_dir, file):
 
         job_post_response = job_post.json()
         job_id = job_post_response['JobIdentifier']
-        # JOB_LIST.append(job_id)
-        # print(job_id)
 
-    except TimeoutError or ConnectionError:
+    except (TimeoutError,ConnectionError):
         print(
-            'Error: Please verify that the Vantage SDK Service is reachable at ' + ROOT_URI)
-        print('REST post request: ' + ROOT_URI + '/REST/Workflows/' +
-              target_workflow_id + '/Submit with the following json blob:')
-        print(job_blob)
+            'Error on POST: Please verify that the Vantage SDK Service is reachable at ' + ROOT_URI)
+        # print('REST post request: ' + ROOT_URI + '/REST/Workflows/' +
+        #       target_workflow_id + '/Submit with the following json blob:')
+        # print(job_blob)
         raw_input("Once SDK Service is verified, Press enter to continue")
 
 
