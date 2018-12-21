@@ -13,10 +13,14 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from subprocess import call
 from time import localtime, strftime
 
+API_ENDPOINT_LIST = ['LIGHTSPEED1', 'LIGHTSPEED2', 'LIGHTSPEED3', 'LIGHTSPEED4'
+                ,'LIGHTSPEED5', 'LIGHTSPEED6', 'LIGHTSPEED7', 'FNDC-VANLSG6-08'
+                ,'FNDC-VANLSG6-09', 'FNDC-VANLSG6-10', 'FNDC-VANLSG6-11'
+                ]
 JOB_LIST = []
-ROOT_URI = 'http://LIGHTSPEED1:8676'
 ROOT_DIR_WIN = 'T:\\\\'
 ROOT_DIR_POSIX = '/Volumes/Quantum2/'
+ROOT_URI = None
 PLATFORM = None
 
 
@@ -31,7 +35,7 @@ def print_intro():
 
     print("=========================================================== " + "\n"
           + '''           Vantage Workflow Submission Script \n
-                Version 1.1, December 03, 2018\n
+                Version 1.2, December 21, 2018\n
     This script will use the Vantage REST API to submit files\n
     to a workflow at set intervals. The user defines the \n
     duration, frequency, and total number of jobs submitted.''' + "\n"
@@ -70,7 +74,7 @@ def print_intro():
             continue
 
     while True:
-        total_duration = str(input("Total Duration (hrs) : "))
+        total_duration = str(input("Total Duration (hrs): "))
         try:
             if total_duration.find(".")== 1:
                 total_duration = float(total_duration)
@@ -82,7 +86,7 @@ def print_intro():
             continue
 
     while True:
-        submit_frequency = str(input("Job Submission Interval (min) : "))
+        submit_frequency = str(input("Job Submission Interval (min): "))
         try:
             if submit_frequency.find(".")== 1:
                 submit_frequency = float(submit_frequency)
@@ -94,7 +98,7 @@ def print_intro():
             continue
 
     while True:
-        jobs_per_submit = str(input("Number of Files to Submit per Interval : "))
+        jobs_per_submit = str(input("Number of Files to Submit per Interval: "))
         try:
             jobs_per_submit = int(jobs_per_submit)
             break
@@ -103,7 +107,7 @@ def print_intro():
             continue
 
     while True:
-        sources_in_rotation = str(input("Total Number of Source Files to Submit : "))
+        sources_in_rotation = str(input("Total Number of Source Files to Submit: "))
         try:
             sources_in_rotation = int(sources_in_rotation)
             break
@@ -112,7 +116,7 @@ def print_intro():
             continue
 
     while True:
-        source_dir = str(input("Watch folder file path (Absolute Windows Path) : "))
+        source_dir = str(input("Watch folder file path (Absolute Windows Path): "))
         valid_path = path_validation(source_dir)
         if valid_path is False:
             print("\n{}   is not a valid directory path, try again.\n".format(source_dir))
@@ -120,9 +124,26 @@ def print_intro():
         else:
             break
 
+    while True:
+        api_endpoint = str(input("The Vantage API Endpoint (Hostname): "))
+        global ROOT_URI
+        ROOT_URI = 'http://'+ api_endpoint + ':8676/'
+        try:
+            if api_endpoint not in API_ENDPOINT_LIST:
+                print("{} is not a valid entry for the API Endpoint, try again.".format(api_endpoint))
+            else:
+                api_endpoint_status = api_check(api_endpoint)
+                if api_endpoint_status == True:
+                    break
+                else:
+                    print('\nError: Please verify that the Vantage SDK Service is started and reachable on {}.'.format(api_endpoint) + '\n')
+                    continue
+        except requests.exceptions.RequestException as err:
+            print('\nError: Please verify that the Vantage SDK Service is started and reachable on {}.'.format(api_endpoint) + '\n\n' + 'Error Message: ' + str(err) + '\n\n')
+            continue
 
     while True:
-        target_workflow_id = str(input("The Vantage Workflow ID : "))
+        target_workflow_id = str(input("The Vantage Workflow ID: "))
         try:
             id_request = requests.get(ROOT_URI + '/REST/workflows/'+ target_workflow_id)
 
@@ -132,9 +153,8 @@ def print_intro():
             else:
                 clear()
                 break
-        except ConnectionError:
-            print('Error: Please verify that the Vantage SDK Service is reachable.')
-            continue
+        except requests.exceptions.RequestException as err:
+            print('\nError: Please verify that the Vantage SDK Service is started and reachable on {}.'.format(api_endpoint) + '\n\n' + 'Error Message: ' + str(err) + '\n\n')
 
     while True:
         print('===========================================================')
@@ -149,6 +169,7 @@ def print_intro():
         print("Jobs per Submission : " + str(jobs_per_submit))
         print("Total Jobs in Batch : " + str(sources_in_rotation))
         print("Watch Folder Path (Win): " + str(source_dir))
+        print("Vantage API Endpoint : " + str(api_endpoint))
         print("Vantage Job ID : " + str(target_workflow_id))
 
         print('')
@@ -170,7 +191,7 @@ def print_intro():
 
     clear()
 
-    return [start_time, total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, target_workflow_id]
+    return [start_time, total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, api_endpoint, target_workflow_id]
 
 
 def platform_check():
@@ -178,31 +199,48 @@ def platform_check():
     PLATFORM = platform.system()
     return PLATFORM
 
-def api_check():
+def api_check(api_endpoint):
     '''Get a listing of nodes in the domain to use incase one goes down.'''
-    sdk_list = []
-    machine_name_list = []
 
-    get_machine_names = requests.get(ROOT_URI + '/REST/Machines')
-    active_machines_json = get_machine_names.json()
-    get_services = requests.get(ROOT_URI + '/REST/Services')
-    active_services_json = get_services.json()
+    try:
+        domain_check = requests.get(ROOT_URI + 'REST/Domain/Online')
+        domain_check_rsp = domain_check.json()
 
-    for service in active_services_json["Services"]:
-        if service["ServiceTypeName"].lower() != "sdk":
-            pass
-        else:
-            sdk_list.append(service["Machine"])
+        api_endpoint_status = domain_check_rsp['Online']
+        return api_endpoint_status
 
-    machines = [[d['Identifier'],d['Name']] for d in active_machines_json["Machines"]]
+    except requests.exceptions.RequestException as err:
+        print("The {} is not active or unreachable, please try again.".format(api_endpoint) + "\n\n" + str(err))
 
-    for a,b in product(sdk_list,machines):
-        if a == b[0]:
-            machine_name_list.append(b[1])
-        else:
-            pass
+# def api_endpoint_failover(api_endpoint):
+#         machine_name_list = []
+#         sdk_list = []
 
-    return machine_name_list
+#         API_ENDPOINT_LIST.remove(api_endpoint)
+
+#         ROOT_URI = "http://" + str(API_ENDPOINT_LIST[0]) + ":8676/"
+
+#         get_machine_names = requests.get(ROOT_URI + 'REST/Machines')
+#         active_machines_json = get_machine_names.json()
+#         get_services = requests.get(ROOT_URI + 'REST/Services')
+#         active_services_json = get_services.json()
+
+#         for service in active_services_json["Services"]:
+#             if service["ServiceTypeName"].lower() != "sdk":
+#                 pass
+#             else:
+#                 sdk_list.append(service["Machine"])
+
+#         machines = [[d['Identifier'],d['Name']] for d in active_machines_json["Machines"]]
+
+#         for a,b in product(sdk_list,machines):
+#             if a == b[0]:
+#                 machine_name_list.append(b[1])
+#             else:
+#                 pass
+
+#         new_api_endpoint  = machine_name_list[0]
+#         return new_api_endpoint
 
 def clean_datetimes(date_str):
     '''Validate and clean user input for the start time.'''
@@ -333,11 +371,10 @@ def check_job_queue(target_workflow_id):
             time.sleep(60)
             job_check_count += 1
 
-        except ConnectionError:
-            print('Error: Please verify that the Vantage SDK Service is reachable at ' + ROOT_URI)
-            print('REST get request: ' + ROOT_URI +
-                  '/REST/Workflows/' + target_workflow_id + '/JobInputs')
-            raw_input("Once SDK Service is verified, Press enter to continue")
+        except requests.exceptions.RequestException as err:
+            print("Error: Please verify that the Vantage SDK Service is reachable at " + ROOT_URI + '/REST/'+ '\n\n' +
+                "Error Mesage: " + str(err) + "\n\n")
+            input("Once SDK Service is verified, Press enter to continue")
             continue
 
     return
@@ -390,7 +427,7 @@ def jobs_complete(files_submitted, files_skipped):
 # ================= API SUBMIT STARTS HERE ====================== #
 
 
-def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, target_workflow_id):
+def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, api_endpoint, target_workflow_id):
 
     jobs_per_hour = (60 / submit_frequency) * jobs_per_submit
     total_jobs = jobs_per_hour * total_duration
@@ -416,19 +453,19 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
         '''Submit batches of jobs at set intervals for the duration specified.'''
         try:
             file = sorted_list[list_number]
-            file_match = re.match(r'([0-9]{7})'+'.mov', file)
+            file_match = re.match('TEST_'+ r'([0-9]{7})'+'.mov', file)
 
             if files_submitted != 0 and files_submitted % jobs_per_submit == 0:
                 print('Waiting ' + str(submit_frequency) + ' minutes\n')
                 time.sleep(submit_frequency * 60)
                 check_job_queue(target_workflow_id)
 
-                print('Submitting Files ' + str(files_submitted + 1) + " to " + str(jobs_per_submit + files_submitted) + ' of ' +
+                print('Submitting Files ' + str(files_submitted + 1) + " to " +str(jobs_per_submit + files_submitted) + ' of ' +
                     str(int(total_jobs)) + ' at ' + str(strftime('%H:%M:%S', localtime())))
 
             if file_match is not None:
                 print("Submitting: " + file)
-                job_submit(target_workflow_id, source_dir, file)
+                job_submit(target_workflow_id, source_dir, api_endpoint, file)
                 files_submitted += 1
                 list_number += 1
             else:
@@ -443,27 +480,42 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
     jobs_complete(files_submitted, files_skipped)
 
 
-def job_submit(target_workflow_id, source_dir, file):
+def job_submit(target_workflow_id, source_dir, api_endpoint, file):
     '''Submit the file to the workflow, using the REST API.'''
+
+    ROOT_URI = "http://" + api_endpoint + ":8676"
 
     try:
         job_get = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
 
-    except (TimeoutError,ConnectionError):
+    except requests.exceptions.RequestException as err:
 
-        try:
-            machine_name_list = api_check()
-            sdk_endpoint = machine_name_list[0]
-            ROOT_URI = "http://" + sdk_endpoint + ":8676"
-            job_get = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
+        API_ENDPOINT_LIST = API_ENDPOINT_LIST.remove(api_endpoint)
 
-        except:
-            print(
-                'Error on GET: Please verify that the Vantage SDK Service is reachable at ' + ROOT_URI)
-            print('REST get request: ' + ROOT_URI +
-                  '/REST/Workflows/' + target_workflow_id + '/JobInputs')
-            raw_input("Once SDK Service is verified, Press enter to continue")
+        while True:
+            try:
+                api_endpoint = API_ENDPOINT_LIST[0]
 
+                ROOT_URI = "http://" + str(api_endpoint) + ":8676"
+
+                print("")
+                print("\n\n**** Switching API endpoint to " + new_api_endpoint + "****\n\n")
+                print("")
+
+                job_get = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
+                break
+
+            except requests.exceptions.RequestException as err:
+                continue
+
+            else:
+                print("\n\n" + "api_endpoint: "  + api_endpoint + "\n\n")
+                print(
+                'Error on GET: Please verify that the Vantage SDK Service is reachable at ' + ROOT_URI + "/REST/" + '\n\n' +
+                "Error Mesage: " + str(err) + "\n\n")
+
+                input("Once SDK Service is verified, Press enter to continue")
+                continue
 
     job_blob = job_get.json()
     job_blob['JobName'] = file
@@ -475,12 +527,9 @@ def job_submit(target_workflow_id, source_dir, file):
         job_post_response = job_post.json()
         job_id = job_post_response['JobIdentifier']
 
-    except (TimeoutError,ConnectionError):
-        print(
-            'Error on POST: Please verify that the Vantage SDK Service is reachable at ' + ROOT_URI)
-        # print('REST post request: ' + ROOT_URI + '/REST/Workflows/' +
-        #       target_workflow_id + '/Submit with the following json blob:')
-        # print(job_blob)
-        raw_input("Once SDK Service is verified, Press enter to continue")
+    except requests.exceptions.RequestException as err:
+        print("Error on POST: Please verify that the Vantage SDK Service is reachable at " + ROOT_URI + '/REST/'+ '\n\n' +
+            "Error Mesage: " + str(err) + "\n\n")
+        input("Once SDK Service is verified, Press enter to continue")
 
 

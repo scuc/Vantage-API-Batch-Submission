@@ -18,7 +18,8 @@ def vantage_main():
     jobs_per_submit = vn_Vars[3]
     sources_in_rotation = vn_Vars[4]
     source_dir = vn_Vars[5]
-    target_workflow_id = vn_Vars[6]
+    api_endpoint = vn_Vars[6]
+    target_workflow_id = vn_Vars[7]
 
 
     print('===========================================================')
@@ -33,6 +34,7 @@ def vantage_main():
     print("Jobs per Submission : " + str(jobs_per_submit))
     print("Jobs in Rotation : " + str(sources_in_rotation))
     print("Watch Folder Path (Win): " + str(source_dir))
+    print("Vantage API Endpoint : " + str(api_endpoint))
     print("Vantage Job ID : " + str(target_workflow_id))
 
     print('')
@@ -40,7 +42,7 @@ def vantage_main():
 
     vn.countdown(start_time)
 
-    vn.api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, target_workflow_id)
+    vn.api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, api_endpoint, target_workflow_id)
 
 
 vantage_main()
