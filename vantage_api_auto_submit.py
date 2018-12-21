@@ -127,10 +127,10 @@ def print_intro():
     while True:
         api_endpoint = str(input("The Vantage API Endpoint (Hostname): "))
         global ROOT_URI
-        ROOT_URI = 'http://'+ api_endpoint + ':8676/'
+        ROOT_URI = 'http://'+ api_endpoint + ':8676'
         try:
             if api_endpoint not in API_ENDPOINT_LIST:
-                print("{} is not a valid entry for the API Endpoint, try again.".format(api_endpoint))
+                print("\n\n{} is not a valid entry for the API Endpoint, try again.".format(api_endpoint))
             else:
                 api_endpoint_status = api_check(api_endpoint)
                 if api_endpoint_status == True:
@@ -203,14 +203,14 @@ def api_check(api_endpoint):
     '''Get a listing of nodes in the domain to use incase one goes down.'''
 
     try:
-        domain_check = requests.get(ROOT_URI + 'REST/Domain/Online')
+        domain_check = requests.get(ROOT_URI + '/REST/Domain/Online')
         domain_check_rsp = domain_check.json()
 
         api_endpoint_status = domain_check_rsp['Online']
         return api_endpoint_status
 
     except requests.exceptions.RequestException as err:
-        print("The {} is not active or unreachable, please try again.".format(api_endpoint) + "\n\n" + str(err))
+        print("\n\n{} is not active or unreachable, please check the Vantage SDK service on the host try again.".format(api_endpoint) + "\n\n" + str(err))
 
 # def api_endpoint_failover(api_endpoint):
 #         machine_name_list = []
@@ -319,7 +319,7 @@ def countdown(start_time):
     time.sleep(1)
     clear()
     print("")
-    print("\n========= Starting Now!!! ==========\n")
+    print("\n========= Starting Now ==========\n")
     print("")
     return
 
@@ -490,6 +490,7 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
 
     except requests.exceptions.RequestException as err:
 
+        print("\n\nEXP#1\n\n")
         API_ENDPOINT_LIST = API_ENDPOINT_LIST.remove(api_endpoint)
 
         while True:
@@ -506,6 +507,7 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
                 break
 
             except requests.exceptions.RequestException as err:
+                print("\n\nEXP#2\n\n")
                 continue
 
             else:
@@ -514,7 +516,7 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
                 'Error on GET: Please verify that the Vantage SDK Service is reachable at ' + ROOT_URI + "/REST/" + '\n\n' +
                 "Error Mesage: " + str(err) + "\n\n")
 
-                input("Once SDK Service is verified, Press enter to continue")
+                input("Once SDK Service is verified, Press enter to continue \n\n")
                 continue
 
     job_blob = job_get.json()
@@ -528,8 +530,9 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
         job_id = job_post_response['JobIdentifier']
 
     except requests.exceptions.RequestException as err:
+        print("\n\nEXP#1\n\n")
         print("Error on POST: Please verify that the Vantage SDK Service is reachable at " + ROOT_URI + '/REST/'+ '\n\n' +
             "Error Mesage: " + str(err) + "\n\n")
-        input("Once SDK Service is verified, Press enter to continue")
+        input("Once SDK Service is verified, Press enter to continue\n\n")
 
 
