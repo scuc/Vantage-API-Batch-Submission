@@ -200,6 +200,31 @@ def platform_check():
     PLATFORM = platform.system()
     return PLATFORM
 
+def domain_load_check():
+    '''Get a Domain Load based on Transcode and CPU'''
+
+    cpu = requests.get(ROOT_URI + '/Rest/Domain/Load/CPU')
+    transcode = requests.get(ROOT_URI + '/Rest/Domain/Load/Transcode')
+    analysis = requests.get(ROOT_URI + '/Rest/Domain/Load/Analysis')
+    edit = requests.get(ROOT_URI + '/Rest/Domain/Load/edit')
+
+    service_list = ['cpu','transcode','analysis','edit']
+
+    load_list = [cpu.json(),transcode.json(),analysis.json(),edit.json()]
+
+    print(load_list)
+
+    count = 0
+    service_load_list = []
+
+    for service in load_list:
+        print("SERVICE: " + str(service))
+        service_load = service['Load']
+        serv_name = service_list[count]
+        service_load_list.append({serv_name: service_load})
+        count += 1
+
+
 def api_endpoint_check(ROOT_URI):
     '''check the online status of an api endpoint'''
 
@@ -214,35 +239,35 @@ def api_endpoint_check(ROOT_URI):
 
     return api_endpoint_status
 
-# def api_endpoint_failover(api_endpoint):
-#         machine_name_list = []
-#         sdk_list = []
+def api_endpoint_failover(api_endpoint):
+        machine_name_list = []
+        sdk_list = []
 
-#         API_ENDPOINT_LIST.remove(api_endpoint)
+        API_ENDPOINT_LIST.remove(api_endpoint)
 
-#         ROOT_URI = "http://" + str(API_ENDPOINT_LIST[0]) + ":8676/"
+        ROOT_URI = "http://" + str(API_ENDPOINT_LIST[0]) + ":8676/"
 
-#         get_machine_names = requests.get(ROOT_URI + 'REST/Machines')
-#         active_machines_json = get_machine_names.json()
-#         get_services = requests.get(ROOT_URI + 'REST/Services')
-#         active_services_json = get_services.json()
+        get_machine_names = requests.get(ROOT_URI + 'REST/Machines')
+        active_machines_json = get_machine_names.json()
+        get_services = requests.get(ROOT_URI + 'REST/Services')
+        active_services_json = get_services.json()
 
-#         for service in active_services_json["Services"]:
-#             if service["ServiceTypeName"].lower() != "sdk":
-#                 pass
-#             else:
-#                 sdk_list.append(service["Machine"])
+        for service in active_services_json["Services"]:
+            if service["ServiceTypeName"].lower() != "sdk":
+                pass
+            else:
+                sdk_list.append(service["Machine"])
 
-#         machines = [[d['Identifier'],d['Name']] for d in active_machines_json["Machines"]]
+        machines = [[d['Identifier'],d['Name']] for d in active_machines_json["Machines"]]
 
-#         for a,b in product(sdk_list,machines):
-#             if a == b[0]:
-#                 machine_name_list.append(b[1])
-#             else:
-#                 pass
+        for a,b in product(sdk_list,machines):
+            if a == b[0]:
+                machine_name_list.append(b[1])
+            else:
+                pass
 
-#         new_api_endpoint  = machine_name_list[0]
-#         return new_api_endpoint
+        new_api_endpoint  = machine_name_list[0]
+        return new_api_endpoint
 
 def clean_datetimes(date_str):
     '''Validate and clean user input for the start time.'''
