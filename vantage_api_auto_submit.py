@@ -132,15 +132,16 @@ def print_intro():
             if api_endpoint not in API_ENDPOINT_LIST:
                 print("\n\n{} is not a valid entry for the API Endpoint, try again.".format(api_endpoint))
             else:
-                api_endpoint_status = api_check(api_endpoint)
+                api_endpoint_status = api_endpoint_check(ROOT_URI)
                 if api_endpoint_status == True:
                     break
                 else:
-                    print('\nError: Please verify that the Vantage SDK Service is started and reachable on {}.'.format(api_endpoint) + '\n')
+                    print(api_endpoint_status)
                     continue
         except requests.exceptions.RequestException as err:
             print('\nError: Please verify that the Vantage SDK Service is started and reachable on {}.'.format(api_endpoint) + '\n\n' + 'Error Message: ' + str(err) + '\n\n')
             continue
+
 
     while True:
         target_workflow_id = str(input("The Vantage Workflow ID: "))
@@ -199,18 +200,19 @@ def platform_check():
     PLATFORM = platform.system()
     return PLATFORM
 
-def api_check(api_endpoint):
-    '''Get a listing of nodes in the domain to use incase one goes down.'''
+def api_endpoint_check(ROOT_URI):
+    '''check the online status of an api endpoint'''
 
     try:
         domain_check = requests.get(ROOT_URI + '/REST/Domain/Online')
         domain_check_rsp = domain_check.json()
 
         api_endpoint_status = domain_check_rsp['Online']
-        return api_endpoint_status
 
     except requests.exceptions.RequestException as err:
-        print("\n\n{} is not active or unreachable, please check the Vantage SDK service on the host try again.".format(api_endpoint) + "\n\n" + str(err))
+        api_endpoint_status = "\n\n{} is not active or unreachable, please check the Vantage SDK service on the host try again.".format(api_endpoint) + "\n\n" + str(err)
+
+    return api_endpoint_status
 
 # def api_endpoint_failover(api_endpoint):
 #         machine_name_list = []
