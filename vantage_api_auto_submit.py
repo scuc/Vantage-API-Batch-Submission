@@ -200,29 +200,75 @@ def platform_check():
     PLATFORM = platform.system()
     return PLATFORM
 
-def domain_load_check():
+def check_domain_load():
     '''Get a Domain Load based on Transcode and CPU'''
+    check_count = 0
 
-    cpu = requests.get(ROOT_URI + '/Rest/Domain/Load/CPU')
-    transcode = requests.get(ROOT_URI + '/Rest/Domain/Load/Transcode')
-    analysis = requests.get(ROOT_URI + '/Rest/Domain/Load/Analysis')
-    edit = requests.get(ROOT_URI + '/Rest/Domain/Load/edit')
+    while True:
+        try:
+            cpu = requests.get(ROOT_URI + '/Rest/Domain/Load/CPU')
+            transcode = requests.get(ROOT_URI + '/Rest/Domain/Load/Transcode')
+            analysis = requests.get(ROOT_URI + '/Rest/Domain/Load/Analysis')
+            edit = requests.get(ROOT_URI + '/Rest/Domain/Load/edit')
 
-    service_list = ['cpu','transcode','analysis','edit']
+            service_list = ['cpu','transcode','analysis','edit']
 
-    load_list = [cpu.json(),transcode.json(),analysis.json(),edit.json()]
+            load_list = [cpu.json(),transcode.json(),analysis.json(),edit.json()]
 
-    print(load_list)
+            print(load_list)
 
-    count = 0
-    service_load_list = []
+            count = 0
+            service_load_list = []
 
-    for service in load_list:
-        print("SERVICE: " + str(service))
-        service_load = service['Load']
-        serv_name = service_list[count]
-        service_load_list.append({serv_name: service_load})
-        count += 1
+            for service in load_list:
+                service_load = service['Load']
+                serv_name = service_list[count]
+                service_load_list.append({serv_name: service_load})
+                count += 1
+
+            high_load_list = []
+
+            for load_dict in service_load_list:
+                for key, value in load_dict.items():
+                    if value > 70:
+                        high_load_list.append(key)
+                        print(key)
+                    else:
+                        continue
+
+            if len(high_load_list) > 0:
+                print("CHECK COUNT: " + str(check_count))
+
+                if len(high_load_list) > 0 and \
+                    check_count == 0:
+                    print('\n===========================================')
+                    print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
+                    print("The Vantage Domain load for the {} service(s) is currently under heavy load.\n".format(high_load_list) + "Job submission will pause until the service load decreases.")
+                    print('===========================================\n')
+                elif len(high_load_list) > 0 and \
+                    check_count > 0 and \
+                    check_count % 5 == 0:
+                    print('\n===========================================')
+                    print("***Job Queue Update***\n" +
+                        str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
+                    print("{} service(s) remain under heavy load.".format(high_load_list))
+                    print('===========================================\n')
+                elif check_count >= 0 and \
+                    check_count % 5 is not 0:
+                    pass
+                else:
+                    continue
+
+                time.sleep(60)
+                check_count += 1
+
+            else:
+                print("BREAK")
+                break
+
+        except Exception as excp:
+            print("ERROR: " + str(excp))
+
 
 
 def api_endpoint_check(ROOT_URI):
