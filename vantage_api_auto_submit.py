@@ -132,7 +132,7 @@ def print_intro():
             if api_endpoint not in API_ENDPOINT_LIST:
                 print("\n\n{} is not a valid entry for the API Endpoint, try again.".format(api_endpoint))
             else:
-                api_endpoint_status = api_endpoint_check(ROOT_URI)
+                api_endpoint_status = api_endpoint_check(ROOT_URI, api_endpoint)
                 if api_endpoint_status == True:
                     break
                 else:
@@ -272,7 +272,7 @@ def check_domain_load():
     return
 
 
-def api_endpoint_check(ROOT_URI):
+def api_endpoint_check(ROOT_URI, api_endpoint):
     '''check the online status of an api endpoint'''
 
     try:
@@ -282,39 +282,50 @@ def api_endpoint_check(ROOT_URI):
         api_endpoint_status = domain_check_rsp['Online']
 
     except requests.exceptions.RequestException as err:
-        api_endpoint_status = "\n\n{} is not active or unreachable, please check the Vantage SDK service on the host try again.".format(api_endpoint) + "\n\n" + str(err)
+        api_endpoint_status = "\n\n{} is not active or unreachable, please check the Vantage SDK service on the host try again.".format(api_endpoint) + "\n\n" + str(err) + "\n\n"
 
     return api_endpoint_status
 
-def api_endpoint_failover(api_endpoint):
+def api_endpoint_failover():
         machine_name_list = []
         sdk_list = []
 
-        API_ENDPOINT_LIST.remove(api_endpoint)
-
         ROOT_URI = "http://" + str(API_ENDPOINT_LIST[0]) + ":8676/"
 
-        get_machine_names = requests.get(ROOT_URI + 'REST/Machines')
-        active_machines_json = get_machine_names.json()
-        get_services = requests.get(ROOT_URI + 'REST/Services')
-        active_services_json = get_services.json()
+        while True:
+            try:
+                get_machine_names = requests.get(ROOT_URI + 'REST/Machines')
+                active_machines_json = get_machine_names.json()
+                get_services = requests.get(ROOT_URI + 'REST/Services')
+                active_services_json = get_services.json()
 
-        for service in active_services_json["Services"]:
-            if service["ServiceTypeName"].lower() != "sdk":
-                pass
-            else:
-                sdk_list.append(service["Machine"])
+                for service in active_services_json["Services"]:
+                    if service["ServiceTypeName"].lower() != "sdk":
+                        pass
+                    else:
+                        sdk_list.append(service["Machine"])
 
-        machines = [[d['Identifier'],d['Name']] for d in active_machines_json["Machines"]]
+                machines = [[d['Identifier'],d['Name']] for d in active_machines_json["Machines"]]
 
-        for a,b in product(sdk_list,machines):
-            if a == b[0]:
-                machine_name_list.append(b[1])
-            else:
-                pass
+                for a,b in product(sdk_list,machines):
+                    if a == b[0]:
+                        machine_name_list.append(b[1])
+                    else:
+                        pass
 
-        new_api_endpoint  = machine_name_list[0]
-        return new_api_endpoint
+                new_api_endpoint  = machine_name_list[0]
+
+                return new_api_endpoint
+
+            except requests.exceptions.RequestException as err:
+                print("\n\n{} is not active or unreachable, trying another api_endpoint.".format(new_api_endpoint) + "\n\n" + str(err))
+                if len(API_ENDPOINT_LIST) > 1:
+                    API_ENDPOINT_LIST.remove(api_endpoint)
+                    continue
+                else:
+                    print("Vantage cannot find an available api endpoint. Please check the Vantage SDK service on the Lighspeed servers is started and reachable.\n")
+                    print("After confirming an available API Enpoint, please hit return to contine.")
+                    continue
 
 def clean_datetimes(date_str):
     '''Validate and clean user input for the start time.'''
@@ -340,8 +351,6 @@ def clean_datetimes(date_str):
             else:
                 clean_st = date_str
                 break
-
-
         except ValueError:
             print("{} is not a valid entry for start time, try again.".format(date_str))
             continue
@@ -368,7 +377,6 @@ def path_validation(source_dir):
         p = posix_path
     else:
         p = str(windows_path)
-
     if p is None or os.path.isdir(p) is not True:
         valid_path = False
     else:
@@ -398,7 +406,7 @@ def countdown(start_time):
     return
 
 
-def check_job_queue(target_workflow_id):
+def check_job_queue(target_workflow_id, api_endpoint):
     '''Check for the number of the jobs running  in the given workflow, prevent the script from overloading the Vantage system.'''
 
     job_check_count = 0
@@ -446,10 +454,17 @@ def check_job_queue(target_workflow_id):
             job_check_count += 1
 
         except requests.exceptions.RequestException as err:
-            print("Error: Please verify that the Vantage SDK Service is reachable at " + ROOT_URI + '/REST/'+ '\n\n' +
-                "Error Mesage: " + str(err) + "\n\n")
-            input("Once SDK Service is verified, Press enter to continue")
-            continue
+            print("\n\n***********************************\n")
+
+            print("Error: Vantage SDK Service is unreachable at " + ROOT_URI + '/REST/'+ '\n\n' +
+                "Error Mesage: " + str(err) + "\n")
+            print("Attempting to switch to a new API Endpoint now.")
+            print("\n***********************************\n\n")
+
+            print(API_ENDPOINT_LIST)
+FIX THIS>>> print(str(api_endpoint))
+            API_ENDPOINT_LIST.remove(str(api_endpoint))
+            api_endpoint_failover()
 
     return
 
@@ -532,7 +547,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
             if files_submitted != 0 and files_submitted % jobs_per_submit == 0:
                 print('Waiting ' + str(submit_frequency) + ' minutes\n')
                 time.sleep(submit_frequency * 60)
-                check_job_queue(target_workflow_id)
+                check_job_queue(target_workflow_id,check_job_queue)
 
                 print('Submitting Files ' + str(files_submitted + 1) + " to " +str(jobs_per_submit + files_submitted) + ' of ' +
                     str(int(total_jobs)) + ' at ' + str(strftime('%H:%M:%S', localtime())))
