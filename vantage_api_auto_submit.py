@@ -215,7 +215,7 @@ def check_domain_load():
 
             load_list = [cpu.json(),transcode.json(),analysis.json(),edit.json()]
 
-            print(load_list)
+            # print(load_list)
 
             count = 0
             service_load_list = []
@@ -232,18 +232,18 @@ def check_domain_load():
                 for key, value in load_dict.items():
                     if value > 70:
                         high_load_list.append(key)
-                        print(key)
+                        # print(key)
                     else:
                         continue
 
             if len(high_load_list) > 0:
-                print("CHECK COUNT: " + str(check_count))
+                # print("CHECK COUNT: " + str(check_count))
 
                 if len(high_load_list) > 0 and \
                     check_count == 0:
                     print('\n===========================================')
                     print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
-                    print("The Vantage Domain load for the {} service(s) is currently under heavy load.\n".format(high_load_list) + "Job submission will pause until the service load decreases.")
+                    print("The Vantage Domain load for the {} service(s) \n is currently under heavy load (>70'%' capacity).\n".format(high_load_list) + "Job submission will pause until the service load decreases.")
                     print('===========================================\n')
                 elif len(high_load_list) > 0 and \
                     check_count > 0 and \
@@ -269,6 +269,7 @@ def check_domain_load():
         except Exception as excp:
             print("ERROR: " + str(excp))
 
+    return
 
 
 def api_endpoint_check(ROOT_URI):
@@ -564,13 +565,15 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
     except requests.exceptions.RequestException as err:
 
         print("\n\nEXP#1\n\n")
-        API_ENDPOINT_LIST = API_ENDPOINT_LIST.remove(api_endpoint)
+        print("ERROR1: " + str(err))
 
         while True:
             try:
-                api_endpoint = API_ENDPOINT_LIST[0]
+                API_ENDPOINT_LIST = API_ENDPOINT_LIST.remove(api_endpoint)
 
-                ROOT_URI = "http://" + str(api_endpoint) + ":8676"
+                new_api_endpoint = API_ENDPOINT_LIST[0]
+
+                ROOT_URI = "http://" + str(new_api_endpoint) + ":8676"
 
                 print("")
                 print("\n\n**** Switching API endpoint to " + new_api_endpoint + "****\n\n")
@@ -581,6 +584,7 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
 
             except requests.exceptions.RequestException as err:
                 print("\n\nEXP#2\n\n")
+                print("ERROR2: " + str(err))
                 continue
 
             else:
