@@ -18,10 +18,10 @@ API_ENDPOINT_LIST = ['LIGHTSPEED1', 'LIGHTSPEED2', 'LIGHTSPEED3', 'LIGHTSPEED4'
                 ,'FNDC-VANLSG6-09', 'FNDC-VANLSG6-10', 'FNDC-VANLSG6-11'
                 ]
 JOB_LIST = []
+PLATFORM = None
 ROOT_DIR_WIN = 'T:\\\\'
 ROOT_DIR_POSIX = '/Volumes/Quantum2/'
 ROOT_URI = None
-PLATFORM = None
 
 
 def clear():
@@ -282,50 +282,10 @@ def api_endpoint_check(ROOT_URI, api_endpoint):
         api_endpoint_status = domain_check_rsp['Online']
 
     except requests.exceptions.RequestException as err:
-        api_endpoint_status = "\n\n{} is not active or unreachable, please check the Vantage SDK service on the host try again.".format(api_endpoint) + "\n\n" + str(err) + "\n\n"
+        api_endpoint_status = "\n\n{} is not active or unreachable, please check the Vantage SDK service on the host and try again.".format(api_endpoint) + "\n\n" + str(err) + "\n\n"
 
     return api_endpoint_status
 
-def api_endpoint_failover():
-        machine_name_list = []
-        sdk_list = []
-
-        ROOT_URI = "http://" + str(API_ENDPOINT_LIST[0]) + ":8676/"
-
-        while True:
-            try:
-                get_machine_names = requests.get(ROOT_URI + 'REST/Machines')
-                active_machines_json = get_machine_names.json()
-                get_services = requests.get(ROOT_URI + 'REST/Services')
-                active_services_json = get_services.json()
-
-                for service in active_services_json["Services"]:
-                    if service["ServiceTypeName"].lower() != "sdk":
-                        pass
-                    else:
-                        sdk_list.append(service["Machine"])
-
-                machines = [[d['Identifier'],d['Name']] for d in active_machines_json["Machines"]]
-
-                for a,b in product(sdk_list,machines):
-                    if a == b[0]:
-                        machine_name_list.append(b[1])
-                    else:
-                        pass
-
-                new_api_endpoint  = machine_name_list[0]
-
-                return new_api_endpoint
-
-            except requests.exceptions.RequestException as err:
-                print("\n\n{} is not active or unreachable, trying another api_endpoint.".format(new_api_endpoint) + "\n\n" + str(err))
-                if len(API_ENDPOINT_LIST) > 1:
-                    API_ENDPOINT_LIST.remove(api_endpoint)
-                    continue
-                else:
-                    print("Vantage cannot find an available api endpoint. Please check the Vantage SDK service on the Lighspeed servers is started and reachable.\n")
-                    print("After confirming an available API Enpoint, please hit return to contine.")
-                    continue
 
 def clean_datetimes(date_str):
     '''Validate and clean user input for the start time.'''
@@ -401,9 +361,69 @@ def countdown(start_time):
     time.sleep(1)
     clear()
     print("")
-    print("\n========= Starting Now ==========\n")
-    print("")
+    print("\n================ Starting Now =================\n")
+    print("========= "+ str(strftime("%A, %d %B %Y %I:%M%p", localtime())) + " ==========\n")
     return
+
+def api_endpoint_failover(api_endpoint):
+
+        print("\n================ Starting API FAILOVER Now =================\n")
+
+        while True:
+            machine_name_list = []
+            sdk_list = []
+
+            try:
+                print(API_ENDPOINT_LIST)
+                print("\nREMOVING THIS ONE: " + api_endpoint + "\n")
+                API_ENDPOINT_LIST.remove(api_endpoint)
+                print(API_ENDPOINT_LIST)
+
+                ROOT_URI = "http://" + str(API_ENDPOINT_LIST[0]) + ":8676/"
+
+                # get_machine_names = requests.get(ROOT_URI + 'REST/Machines')
+                # active_machines_json = get_machine_names.json()
+                # get_services = requests.get(ROOT_URI + 'REST/Services')
+                # active_services_json = get_services.json()
+
+                # for service in active_services_json["Services"]:
+                #     if service["ServiceTypeName"].lower() != "sdk":
+                #         pass
+                #     else:
+                #         sdk_list.append(service["Machine"])
+
+                # machines = [[d['Identifier'],d['Name']] for d in active_machines_json["Machines"]]
+
+                # print("\nSDK LIST: " + str(sdk_list) + "\n")
+                # print("\nMACHINES: " + str(machines) + "\n")
+
+                # for a,b in product(sdk_list, machines):
+                #     if a == b[0]:
+                #         machine_name_list.append(b[1])
+                #     else:
+                #         pass
+
+                # new_api_endpoint = machine_name_list[0]
+
+                new_api_endpoint = API_ENDPOINT_LIST[0]
+
+                print("\nNEW API ENDPOINT: " + new_api_endpoint + "\n")
+
+                api_endpoint = new_api_endpoint
+
+                break
+
+            except requests.exceptions.RequestException as err:
+                print("\n\n{} is not active or unreachable, trying another api_endpoint.".format(new_api_endpoint) + "\n\n" + str(err))
+                if len(API_ENDPOINT_LIST) > 1:
+                    API_ENDPOINT_LIST.remove(api_endpoint)
+                    continue
+                else:
+                    print("Vantage cannot find an available api endpoint. Please check the Vantage SDK service on the Lighspeed servers is started and reachable.\n")
+                    print("After confirming an available API Enpoint, please hit return to contine.")
+                    continue
+
+        return api_endpoint
 
 
 def check_job_queue(target_workflow_id, api_endpoint):
@@ -413,6 +433,8 @@ def check_job_queue(target_workflow_id, api_endpoint):
 
     while True:
         try:
+            ROOT_URI = "http://" + str(api_endpoint) + ":8676/"
+
             get_job_status = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/Jobs/?filter=Active')
 
             active_jobs_json = get_job_status.json()
@@ -422,10 +444,10 @@ def check_job_queue(target_workflow_id, api_endpoint):
             print("job check count: " + str(job_check_count))
             print("")
 
-            if active_job_count <= 15:
+            if active_job_count <= 6:
                 break
 
-            elif active_job_count >= 15 and \
+            elif active_job_count >= 6 and \
                 job_check_count == 0:
 
                 print('\n====================================================')
@@ -455,18 +477,13 @@ def check_job_queue(target_workflow_id, api_endpoint):
 
         except requests.exceptions.RequestException as err:
             print("\n\n***********************************\n")
+            print("Error Mesage: " + str(err) + "\n")
+            print("Attempting to switch to a new API Endpoint now.\n")
+            print("***********************************\n\n")
+            api_endpoint = api_endpoint_failover(api_endpoint)
+            continue
 
-            print("Error: Vantage SDK Service is unreachable at " + ROOT_URI + '/REST/'+ '\n\n' +
-                "Error Mesage: " + str(err) + "\n")
-            print("Attempting to switch to a new API Endpoint now.")
-            print("\n***********************************\n\n")
-
-            print(API_ENDPOINT_LIST)
-FIX THIS>>> print(str(api_endpoint))
-            API_ENDPOINT_LIST.remove(str(api_endpoint))
-            api_endpoint_failover()
-
-    return
+    return api_endpoint
 
 def check_job_state(files_submitted, jobs_per_submit):
     '''CURRENTLY UNSUSED -- Count the total number of sucessful and failed jobs at the end of the batch.'''
@@ -547,7 +564,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
             if files_submitted != 0 and files_submitted % jobs_per_submit == 0:
                 print('Waiting ' + str(submit_frequency) + ' minutes\n')
                 time.sleep(submit_frequency * 60)
-                check_job_queue(target_workflow_id,check_job_queue)
+                api_endpoint = check_job_queue(target_workflow_id,api_endpoint)
 
                 print('Submitting Files ' + str(files_submitted + 1) + " to " +str(jobs_per_submit + files_submitted) + ' of ' +
                     str(int(total_jobs)) + ' at ' + str(strftime('%H:%M:%S', localtime())))
@@ -574,57 +591,30 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
 
     ROOT_URI = "http://" + api_endpoint + ":8676"
 
-    try:
-        job_get = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
+    print("ROOT URI - Job Submit: " + str(ROOT_URI))
 
-    except requests.exceptions.RequestException as err:
-
-        print("\n\nEXP#1\n\n")
-        print("ERROR1: " + str(err))
-
-        while True:
-            try:
-                API_ENDPOINT_LIST = API_ENDPOINT_LIST.remove(api_endpoint)
-
-                new_api_endpoint = API_ENDPOINT_LIST[0]
-
-                ROOT_URI = "http://" + str(new_api_endpoint) + ":8676"
-
-                print("")
-                print("\n\n**** Switching API endpoint to " + new_api_endpoint + "****\n\n")
-                print("")
-
-                job_get = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
-                break
-
-            except requests.exceptions.RequestException as err:
-                print("\n\nEXP#2\n\n")
-                print("ERROR2: " + str(err))
-                continue
-
+    while True:
+        try:
+            job_get = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
+            if job_get is not None:
+                    job_blob = job_get.json()
+                    job_blob['JobName'] = file
+                    job_blob['Medias'][0]['Files'][0] = source_dir + file
             else:
-                print("\n\n" + "api_endpoint: "  + api_endpoint + "\n\n")
-                print(
-                'Error on GET: Please verify that the Vantage SDK Service is reachable at ' + ROOT_URI + "/REST/" + '\n\n' +
-                "Error Mesage: " + str(err) + "\n\n")
-
-                input("Once SDK Service is verified, Press enter to continue \n\n")
+                api_endpoint = check_job_queue(target_workflow_id,api_endpoint)
                 continue
 
-    job_blob = job_get.json()
-    job_blob['JobName'] = file
-    job_blob['Medias'][0]['Files'][0] = source_dir + file
+            job_post = requests.post(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/Submit',json=job_blob)
 
-    try:
-        job_post = requests.post(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/Submit',json=job_blob)
+            job_post_response = job_post.json()
+            job_id = job_post_response['JobIdentifier']
+            break
 
-        job_post_response = job_post.json()
-        job_id = job_post_response['JobIdentifier']
+        except requests.exceptions.RequestException as err:
 
-    except requests.exceptions.RequestException as err:
-        print("\n\nEXP#1\n\n")
-        print("Error on POST: Please verify that the Vantage SDK Service is reachable at " + ROOT_URI + '/REST/'+ '\n\n' +
-            "Error Mesage: " + str(err) + "\n\n")
-        input("Once SDK Service is verified, Press enter to continue\n\n")
-
-
+            print("\n\n***********************************\n")
+            print("Error Mesage: " + str(err) + "\n")
+            print("Attempting to switch to a new API Endpoint now.\n")
+            print("***********************************\n\n")
+            api_endpoint = api_endpoint_failover(api_endpoint)
+            continue
