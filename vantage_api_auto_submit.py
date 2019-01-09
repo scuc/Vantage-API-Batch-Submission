@@ -195,82 +195,12 @@ def print_intro():
     return [start_time, total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, api_endpoint, target_workflow_id]
 
 
+# ========================= USER INPUT VALIDATION =========================== #
+
 def platform_check():
     '''Get the OS of the server executing the code.'''
     PLATFORM = platform.system()
     return PLATFORM
-
-def check_domain_load():
-    '''Get a Domain Load based on Transcode and CPU'''
-    check_count = 0
-
-    while True:
-        try:
-            cpu = requests.get(ROOT_URI + '/Rest/Domain/Load/CPU')
-            transcode = requests.get(ROOT_URI + '/Rest/Domain/Load/Transcode')
-            analysis = requests.get(ROOT_URI + '/Rest/Domain/Load/Analysis')
-            edit = requests.get(ROOT_URI + '/Rest/Domain/Load/edit')
-
-            service_list = ['cpu','transcode','analysis','edit']
-
-            load_list = [cpu.json(),transcode.json(),analysis.json(),edit.json()]
-
-            # print(load_list)
-
-            count = 0
-            service_load_list = []
-
-            for service in load_list:
-                service_load = service['Load']
-                serv_name = service_list[count]
-                service_load_list.append({serv_name: service_load})
-                count += 1
-
-            high_load_list = []
-
-            for load_dict in service_load_list:
-                for key, value in load_dict.items():
-                    if value > 70:
-                        high_load_list.append(key)
-                        # print(key)
-                    else:
-                        continue
-
-            if len(high_load_list) > 0:
-                # print("CHECK COUNT: " + str(check_count))
-
-                if len(high_load_list) > 0 and \
-                    check_count == 0:
-                    print('\n===========================================')
-                    print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
-                    print("The Vantage Domain load for the {} service(s) \n is currently under heavy load (>70'%' capacity).\n".format(high_load_list) + "Job submission will pause until the service load decreases.")
-                    print('===========================================\n')
-                elif len(high_load_list) > 0 and \
-                    check_count > 0 and \
-                    check_count % 5 == 0:
-                    print('\n===========================================')
-                    print("***Job Queue Update***\n" +
-                        str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
-                    print("{} service(s) remain under heavy load.".format(high_load_list))
-                    print('===========================================\n')
-                elif check_count >= 0 and \
-                    check_count % 5 is not 0:
-                    pass
-                else:
-                    continue
-
-                time.sleep(60)
-                check_count += 1
-
-            else:
-                print("BREAK")
-                break
-
-        except Exception as excp:
-            print("ERROR: " + str(excp))
-
-    return
-
 
 def api_endpoint_check(ROOT_URI, api_endpoint):
     '''check the online status of an api endpoint'''
@@ -365,9 +295,150 @@ def countdown(start_time):
     print("========= "+ str(strftime("%A, %d %B %Y %I:%M%p", localtime())) + " ==========\n")
     return
 
+# ===================== DOMAIN AND API ENPOINT CHECKS ======================= #
+
+def check_domain_load(job_check_count, api_endpoint):
+    '''Get a Domain Load based on Transcode and CPU'''
+
+    # print("============= STARTING CHECK DOMAIN LOAD ==============")
+    # print("============= Job Check Count = " + str(job_check_count) + " ===================")
+
+    while True:
+        try:
+            ROOT_URI = "http://" + str(api_endpoint) + ":8676/"
+
+            cpu = requests.get(ROOT_URI + '/Rest/Domain/Load/CPU')
+            transcode = requests.get(ROOT_URI + '/Rest/Domain/Load/Transcode')
+            analysis = requests.get(ROOT_URI + '/Rest/Domain/Load/Analysis')
+            edit = requests.get(ROOT_URI + '/Rest/Domain/Load/edit')
+
+            service_list = ['cpu','transcode','analysis','edit']
+
+            load_list = [cpu.json(),transcode.json(),analysis.json(),edit.json()]
+
+            count = 0
+            service_load_list = []
+            load_str = ""
+
+            for service in load_list:
+                service_load = service['Load']
+                serv_name = service_list[count]
+                service_load_list.append({serv_name: service_load})
+                count += 1
+
+            high_load_list = []
+            low_load_list = []
+
+            for load_dict in service_load_list:
+                for key, value in load_dict.items():
+                    if value > 5:
+                        high_load_list.append((key, value))
+                    else:
+                        low_load_list.append((key, value))
+
+            if len(high_load_list) > 0:
+
+                for x in high_load_list:
+                    load_str += str(x) + " "
+
+                if len(high_load_list) > 0 and \
+                    job_check_count == 0:
+                    domain_load_msg ="\n===========================================\n" + str(strftime("%A, %d. %B %Y %I:%M%p", localtime())) + "\nThe Vantage Domain load for the {} service(s)\nis currently under heavy load (>70% capacity).\nJob submission will pause until the service load decreases.".format(load_str) + "\n===========================================\n"
+                    return domain_load_msg
+                elif len(high_load_list) > 0 and \
+                    job_check_count > 0 and \
+                    job_check_count % 5 == 0:
+                    domain_load_msg = "\n===========================================\n" + str(strftime("%A, %d. %B %Y %I:%M%p", localtime())) +"\n***Domain Load Status***\n{} service(s) remain under heavy load.".format(load_str) + "\n Waiting for the service load to decrease. \n===========================================\n"
+                    return domain_load_msg
+                elif job_check_count >= 0 and \
+                    job_check_count % 5 is not 0:
+                    pass
+                else:
+                    continue
+                time.sleep(60)
+                check_count += 1
+
+            else:
+                for x in low_load_list:
+                    load_str += str(x) + " "
+                domain_load_msg = "\n===========================================\n" + str(strftime("%A, %d. %B %Y %I:%M%p", localtime())) +"\n***Domain Load Status***\n{} service(s) are operating at normal load.".format(load_str) +  "\n===========================================\n"
+                return domain_load_msg
+
+        except Exception as excp:
+            print("Check_Domain_Load - Error Message: " + str(excp))
+            break
+
+    return domain_load_msg
+
+def check_job_queue(target_workflow_id, api_endpoint):
+    '''Check for the number of the jobs running  in the given workflow, prevent the script from overloading the Vantage system.'''
+
+    job_check_count = 0
+
+    while True:
+        try:
+            ROOT_URI = "http://" + str(api_endpoint) + ":8676/"
+
+            get_job_status = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/Jobs/?filter=Active')
+
+            active_jobs_json = get_job_status.json()
+            active_job_count = len(active_jobs_json['Jobs'])
+
+            print("active job count: " + str(active_job_count))
+            print("job check count: " + str(job_check_count))
+            print("")
+
+            if active_job_count <= 3:
+                break
+
+            elif active_job_count >= 3 and \
+                job_check_count == 0:
+
+                print('\n====================================================')
+                print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
+                print("There are currently {} active jobs in this workflow.\n".format(active_job_count) + "Job submission will pause until the job queue clears up.")
+                print('====================================================\n')
+                domain_load = check_domain_load(job_check_count, api_endpoint)
+                print(domain_load)
+
+            elif active_job_count >= 10 and \
+                    job_check_count > 0 and \
+                    job_check_count % 5 == 0:
+
+                print('\n===========================================')
+                print("***Job Queue Update***\n" +
+                    str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
+                print("{} active jobs remain.".format(active_job_count))
+                print('===========================================\n')
+                domain_load = check_domain_load(job_check_count, api_endpoint)
+                print(domain_load)
+
+            elif job_check_count >= 0 and \
+                job_check_count % 5 is not 0:
+                pass
+
+            else:
+                continue
+
+            time.sleep(60)
+            job_check_count += 1
+
+        except requests.exceptions.RequestException as err:
+            print("\n\n***********************************\n")
+            print("Check_Job_Queue - Error Mesage: " + str(err) + "\n")
+            print("Attempting to switch to a new API Endpoint now.\n")
+            print("***********************************\n\n")
+            api_endpoint = api_endpoint_failover(api_endpoint)
+            continue
+
+    return api_endpoint
+
 def api_endpoint_failover(api_endpoint):
 
-        print("\n================ Starting API FAILOVER Now =================\n")
+        print("\n==================================================\n")
+        print("                 Starting API FAILOVER Now          ")
+        print("           "+ str(strftime("%A, %d %B %Y %I:%M%p", localtime())) + "           ")
+        print("\n==================================================\n")
 
         while True:
             machine_name_list = []
@@ -380,30 +451,6 @@ def api_endpoint_failover(api_endpoint):
                 print(API_ENDPOINT_LIST)
 
                 ROOT_URI = "http://" + str(API_ENDPOINT_LIST[0]) + ":8676/"
-
-                # get_machine_names = requests.get(ROOT_URI + 'REST/Machines')
-                # active_machines_json = get_machine_names.json()
-                # get_services = requests.get(ROOT_URI + 'REST/Services')
-                # active_services_json = get_services.json()
-
-                # for service in active_services_json["Services"]:
-                #     if service["ServiceTypeName"].lower() != "sdk":
-                #         pass
-                #     else:
-                #         sdk_list.append(service["Machine"])
-
-                # machines = [[d['Identifier'],d['Name']] for d in active_machines_json["Machines"]]
-
-                # print("\nSDK LIST: " + str(sdk_list) + "\n")
-                # print("\nMACHINES: " + str(machines) + "\n")
-
-                # for a,b in product(sdk_list, machines):
-                #     if a == b[0]:
-                #         machine_name_list.append(b[1])
-                #     else:
-                #         pass
-
-                # new_api_endpoint = machine_name_list[0]
 
                 new_api_endpoint = API_ENDPOINT_LIST[0]
 
@@ -426,64 +473,7 @@ def api_endpoint_failover(api_endpoint):
         return api_endpoint
 
 
-def check_job_queue(target_workflow_id, api_endpoint):
-    '''Check for the number of the jobs running  in the given workflow, prevent the script from overloading the Vantage system.'''
-
-    job_check_count = 0
-
-    while True:
-        try:
-            ROOT_URI = "http://" + str(api_endpoint) + ":8676/"
-
-            get_job_status = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/Jobs/?filter=Active')
-
-            active_jobs_json = get_job_status.json()
-            active_job_count = len(active_jobs_json['Jobs'])
-
-            print("active job count: " + str(active_job_count))
-            print("job check count: " + str(job_check_count))
-            print("")
-
-            if active_job_count <= 6:
-                break
-
-            elif active_job_count >= 6 and \
-                job_check_count == 0:
-
-                print('\n====================================================')
-                print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
-                print("There are currently {} active jobs in this workflow.\n".format(active_job_count) + "Job submission will pause until the job queue clears up.")
-                print('====================================================\n')
-
-            elif active_job_count >= 10 and \
-                    job_check_count > 0 and \
-                    job_check_count % 5 == 0:
-
-                print('\n===========================================')
-                print("***Job Queue Update***\n" +
-                    str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
-                print("{} active jobs remain.".format(active_job_count))
-                print('===========================================\n')
-
-            elif job_check_count >= 0 and \
-                job_check_count % 5 is not 0:
-                pass
-
-            else:
-                continue
-
-            time.sleep(60)
-            job_check_count += 1
-
-        except requests.exceptions.RequestException as err:
-            print("\n\n***********************************\n")
-            print("Error Mesage: " + str(err) + "\n")
-            print("Attempting to switch to a new API Endpoint now.\n")
-            print("***********************************\n\n")
-            api_endpoint = api_endpoint_failover(api_endpoint)
-            continue
-
-    return api_endpoint
+# ==================== JOB STATES and LOGGING ========================= #
 
 def check_job_state(files_submitted, jobs_per_submit):
     '''CURRENTLY UNSUSED -- Count the total number of sucessful and failed jobs at the end of the batch.'''
@@ -530,7 +520,7 @@ def jobs_complete(files_submitted, files_skipped):
     # print(str(sucessful_jobs) + ' files were sucessful.')
 
 
-# ================= API SUBMIT STARTS HERE ====================== #
+# ==================== API SUBMIT STARTS HERE ============================= #
 
 
 def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, api_endpoint, target_workflow_id):
@@ -591,7 +581,7 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
 
     ROOT_URI = "http://" + api_endpoint + ":8676"
 
-    print("ROOT URI - Job Submit: " + str(ROOT_URI))
+    # print("ROOT URI - Job Submit: " + str(ROOT_URI))
 
     while True:
         try:
