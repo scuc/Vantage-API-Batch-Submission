@@ -13,6 +13,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from subprocess import call
 from time import localtime, strftime
 
+API_ENDPOINT = None
 API_ENDPOINT_LIST = ['LIGHTSPEED1', 'LIGHTSPEED2', 'LIGHTSPEED3', 'LIGHTSPEED4'
                 ,'LIGHTSPEED5', 'LIGHTSPEED6', 'LIGHTSPEED7', 'FNDC-VANLSG6-08'
                 ,'FNDC-VANLSG6-09', 'FNDC-VANLSG6-10', 'FNDC-VANLSG6-11'
@@ -126,7 +127,7 @@ def print_intro():
             break
 
     while True:
-        api_endpoint = str(input("The Vantage API Endpoint (Hostname): "))
+        API_ENDPOINT = str(input("The Vantage API Endpoint (Hostname): "))
         global ROOT_URI
         ROOT_URI = 'http://'+ api_endpoint + ':8676'
         try:
@@ -320,36 +321,36 @@ def check_vantage_status(target_workflow_id, api_endpoint):
 
             status_val = [job_queue[0], domain_load[0], job_count_val]
 
-            break_list = [[0,0,0], [0,0,1],[0,0,2]]
+            break_list = [[0,0,0],[0,0,1],[0,0,2]]
             msg1_list = [[0,1,0],[0,1,1],[1,0,0],[1,1,0]]
             msg2_list = [[0,1,2],[1,0,2],[1,1,2]]
-            msg3_list = [[1,0,1][1,1,1]]
+            msg3_list = [[1,0,1],[1,1,1]]
 
             if status_val in msg1_list:
                 print("====================================================")
-                print("JOB CHECK COUNT: " + str(job_check_count))
+                print("Job Check Count: " + str(job_check_count))
                 print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
                 print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1])) + str(domain_load[2])
+                print("Domain Load: " + str(domain_load[1]) + str(domain_load[2]))
                 print("Job submission will pause until the system load decreases.")
                 print("====================================================\n")
-                continue
+
             elif status_val in msg2_list:
                 print("")
                 print("Job Check Count: " + str(job_check_count))
                 print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1])) + str(domain_load[2]))
+                print("Domain Load: " + str(domain_load[1]) + str(domain_load[2]))
                 print("")
-                continue
-            elif status_val in
-                print("====================================================")
+
+            elif status_val in msg3_list:
+                print("\n====================================================")
                 print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
                 print("*** System Load - Status Update***")
                 print("Active Job Count: " + str(job_queue[1]))
                 print("Domain Load: " + str(domain_load[1]) + str(domain_load[2]))
-                print("Waiting for the service load to decrease.")
+                print("Waiting for the system load to decrease.")
                 print("====================================================\n")
-                continue
+
             else:
                 break
 
@@ -393,24 +394,25 @@ def check_domain_load(job_check_count, api_endpoint):
 
         for load_dict in service_load_list:
             for key, value in load_dict.items():
-                if value > 5:
+                if value > 85:
                     high_load_list.append((key, value))
                 else:
                     low_load_list.append((key, value))
 
         if len(high_load_list) > 0:
 
-            domain_load_val= 1
+            domain_load_val = 1
 
         else:
             domain_load_val = 0
 
     except requests.exceptions.RequestException as err:
-        print("\n\n***********************************\n")
+        print("\n\n***********************************")
         print("check_domain_load() - Error Mesage: " + str(err) + "\n")
-        print("Attempting to switch to a new API Endpoint now.\n")
+        print("Attempting to switch to a new API Endpoint now.")
         print("***********************************\n\n")
-        api_endpoint = api_endpoint_failover(api_endpoint)
+        API_ENDPOINT = api_endpoint_failover(api_endpoint)
+        continue
 
     return [domain_load_val, high_load_list, low_load_list]
 
@@ -425,60 +427,61 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
         active_jobs_json = get_job_status.json()
         active_job_count = len(active_jobs_json['Jobs'])
 
-        if active_job_count <= 3:
+        if active_job_count <= 15:
             job_queue_val = 0
 
-        elif active_job_count >= 3 and \
+        elif active_job_count >= 15 and \
             job_check_count == 0:
             job_queue_val = 1
 
-        elif active_job_count >= 3 and \
+        elif active_job_count >= 15 and \
             job_check_count > 0 and \
             job_check_count % 5 is not 0:
             job_queue_val = 1
 
-        elif active_job_count >= 3 and \
-                job_check_count > 0 and \
-                job_check_count % 5 == 0:
-                job_queue_val = 2
+        elif active_job_count >= 15 and \
+            job_check_count > 0 and \
+            job_check_count % 5 == 0:
+            job_queue_val = 2
 
         else:
             job_queue_val = 0
-            print("PASS")
+            print("PASS JOB QUEUE VAL")
             pass
 
     except requests.exceptions.RequestException as err:
-        print("\n\n***********************************\n")
+        print("\n\n***********************************")
         print("check_job_queue() - Error Mesage: " + str(err) + "\n")
-        print("Attempting to switch to a new API Endpoint now.\n")
+        print("Attempting to switch to a new API Endpoint now.")
         print("***********************************\n\n")
         api_endpoint = api_endpoint_failover(api_endpoint)
+        check_job_queue()
 
     return [job_queue_val, active_job_count]
 
 
 def api_endpoint_failover(api_endpoint):
 
-        print("\n==================================================\n")
-        print("                 Starting API FAILOVER Now          ")
-        print("           "+ str(strftime("%A, %d %B %Y %I:%M%p", localtime())) + "           ")
-        print("\n==================================================\n")
+        print("\n==================================================")
+        print("     Starting API Failover Now          ")
+        print(      str(strftime("%A, %d %B %Y %I:%M%p", localtime())))
+        print("==================================================\n")
 
         while True:
             machine_name_list = []
             sdk_list = []
 
             try:
-                print(API_ENDPOINT_LIST)
-                print("\nREMOVING THIS ONE: " + api_endpoint + "\n")
+                # print(API_ENDPOINT_LIST)
+                print("\nRemoving {} from the list of available api endpoints. ".format(api_endpoint))
                 API_ENDPOINT_LIST.remove(api_endpoint)
-                print(API_ENDPOINT_LIST)
+                # print(API_ENDPOINT_LIST)
 
                 ROOT_URI = "http://" + str(API_ENDPOINT_LIST[0]) + ":8676/"
 
                 new_api_endpoint = API_ENDPOINT_LIST[0]
 
-                print("\nNEW API ENDPOINT: " + new_api_endpoint + "\n")
+                print("\nSwitching to new API Endpoint: " + new_api_endpoint + "\n")
 
                 api_endpoint = new_api_endpoint
 
@@ -579,6 +582,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
             if files_submitted != 0 and files_submitted % jobs_per_submit == 0:
                 print('Waiting ' + str(submit_frequency) + ' minutes\n')
                 time.sleep(submit_frequency * 60)
+
                 check_vantage_status(target_workflow_id, api_endpoint)
 
                 print('Submitting Files ' + str(files_submitted + 1) + " to " +str(jobs_per_submit + files_submitted) + ' of ' +
@@ -606,8 +610,6 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
 
     ROOT_URI = "http://" + api_endpoint + ":8676"
 
-    # print("ROOT URI - Job Submit: " + str(ROOT_URI))
-
     while True:
         try:
             job_get = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
@@ -627,9 +629,9 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
 
         except requests.exceptions.RequestException as err:
 
-            print("\n\n***********************************\n")
-            print("Error Mesage: " + str(err) + "\n")
-            print("Attempting to switch to a new API Endpoint now.\n")
-            print("***********************************\n\n")
+            print("\n***********************************")
+            print("api_submit() Error Mesage: " + str(err))
+            print("Attempting to switch to a new API Endpoint now.")
+            print("***********************************\n")
             api_endpoint = api_endpoint_failover(api_endpoint)
-            continue
+            job_submit(api_endpoint)
