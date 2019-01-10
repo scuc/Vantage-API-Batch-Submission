@@ -311,34 +311,21 @@ def check_vantage_status(target_workflow_id, api_endpoint):
             domain_load = check_domain_load(job_check_count, api_endpoint)
             job_queue = check_job_queue(target_workflow_id, api_endpoint, job_check_count)
 
-            if job_check_count == 0 and \
-                domain_load[0] == 0 and \
-                job_queue[0] == 0:
+            if job_check_count == 0:
+                job_count_val = 0
+            elif job_check_count % 5 is 0:
+                job_count_val = 1
+            else:
+                job_count_val = 2
 
-                print("")
-                print("Job Check Count: " + str(job_check_count))
-                print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1])) + str(domain_load[2]))
-                print("")
-                break
+            status_val = [job_queue[0], domain_load[0], job_count_val]
 
-            elif job_check_count > 0 and \
-                job_check_count % 5 is not 0 and \
-                domain_load[0] == 0 and \
-                job_queue[0] == 0:
+            break_list = [[0,0,0], [0,0,1],[0,0,2]]
+            msg1_list = [[0,1,0],[0,1,1],[1,0,0],[1,1,0]]
+            msg2_list = [[0,1,2],[1,0,2],[1,1,2]]
+            msg3_list = [[1,0,1][1,1,1]]
 
-                print("")
-                print("Job Check Count: " + str(job_check_count))
-                print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1])) + str(domain_load[2]))
-                print("")
-                break
-
-            elif job_check_count == 0 and \
-                job_check_count % 5 == 0 and \
-                domain_load[0] and \
-                job_queue[0] == 1:
-
+            if status_val in msg1_list:
                 print("====================================================")
                 print("JOB CHECK COUNT: " + str(job_check_count))
                 print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
@@ -346,15 +333,15 @@ def check_vantage_status(target_workflow_id, api_endpoint):
                 print("Domain Load: " + str(domain_load[1])) + str(domain_load[2])
                 print("Job submission will pause until the system load decreases.")
                 print("====================================================\n")
-                time.sleep(60)
-                job_check_count += 1
                 continue
-
-            elif job_check_count > 0 and \
-                job_check_count % 5 is 0 and \
-                domain_load[0] == 0 and \
-                job_queue[0] == 1:
-
+            elif status_val in msg2_list:
+                print("")
+                print("Job Check Count: " + str(job_check_count))
+                print("Active Job Count: " + str(job_queue[1]))
+                print("Domain Load: " + str(domain_load[1])) + str(domain_load[2]))
+                print("")
+                continue
+            elif status_val in
                 print("====================================================")
                 print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
                 print("*** System Load - Status Update***")
@@ -362,123 +349,12 @@ def check_vantage_status(target_workflow_id, api_endpoint):
                 print("Domain Load: " + str(domain_load[1]) + str(domain_load[2]))
                 print("Waiting for the service load to decrease.")
                 print("====================================================\n")
-
-                time.sleep(60)
-                job_check_count += 1
                 continue
-
-            elif job_check_count > 0 and \
-                job_check_count % 5 is 0 and \
-                domain_load[0] == 1 and \
-                job_queue[0] == 2:
-
-                print("====================================================")
-                print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
-                print("*** System Load - Status Update***")
-                print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1]) + str(domain_load[2]))
-                print("Waiting for the service load to decrease.")
-                print("====================================================\n")
-
-                time.sleep(60)
-                job_check_count += 1
-                continue
-
-            elif job_check_count > 0 and \
-                job_check_count % 5 is 0 and \
-                domain_load[0] == 1 and \
-                job_queue[0] == 1:
-
-                print("====================================================")
-                print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
-                print("*** System Load - Status Update***")
-                print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1]) + str(domain_load[2]))
-                print("Waiting for the service load to decrease.")
-                print("====================================================\n")
-
-                time.sleep(60)
-                job_check_count += 1
-                continue
-
-            elif job_check_count > 0 and \
-                job_check_count % 5 is not 0 and \
-                domain_load[0] == 0 and \
-                job_queue[0] == 1:
-
-                print("")
-                print("Job Check Count: " + str(job_check_count))
-                print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1])) + str(domain_load[2]))
-                print("")
-
-                time.sleep(60)
-                job_check_count += 1
-                continue
-
-            elif job_check_count > 0 and \
-                job_check_count % 5 is not 0 and \
-                domain_load[0] == 1 and \
-                job_queue[0] == 1:
-
-                print("")
-                print("Job Check Count: " + str(job_check_count))
-                print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1])) + str(domain_load[2]))
-                print("")
-
-                time.sleep(60)
-                job_check_count += 1
-                continue
-
-            elif job_check_count > 0 and \
-                job_check_count % 5 is not 0 and \
-                domain_load[0] == 1 and \
-                job_queue[0] == 1:
-
-                print("")
-                print("Job Check Count: " + str(job_check_count))
-                print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1])) + str(domain_load[2]))
-                print("")
-
-                time.sleep(60)
-                job_check_count += 1
-                continue
-
-            elif job_check_count > 0 and \
-                job_check_count % 5 is not 0 and \
-                domain_load[0] == 1 and \
-                job_queue[0] == 2:
-
-                print("")
-                print("Job Check Count: " + str(job_check_count))
-                print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1])) + str(domain_load[2]))
-                print("")
-
-                time.sleep(60)
-                job_check_count += 1
-                continue
-
-            elif job_check_count > 0 and \
-                job_check_count % 5 is not 0 and \
-                domain_load[0] == 0 and \
-                job_queue[0] == 2:
-
-                print("")
-                print("Job Check Count: " + str(job_check_count))
-                print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1])) + str(domain_load[2]))
-                print("")
-
-                time.sleep(60)
-                job_check_count += 1
-                continue
-
             else:
-                print("???????")
                 break
+
+            time.sleep(60)
+            job_check_count += 1
 
         except Exception as excp:
             print("check_vantage_status() - Error Message: " + str(excp))
@@ -550,29 +426,24 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
         active_job_count = len(active_jobs_json['Jobs'])
 
         if active_job_count <= 3:
-            job_check_val = 0
-
+            job_queue_val = 0
 
         elif active_job_count >= 3 and \
             job_check_count == 0:
-            job_check_val = 1
+            job_queue_val = 1
 
         elif active_job_count >= 3 and \
             job_check_count > 0 and \
             job_check_count % 5 is not 0:
-            job_check_val = 1
-
-            # job_check_msg = str(strftime("%A, %d. %B %Y %I:%M%p", localtime())) + "\nThere are currently {} active jobs in this workflow.\nJob submission will pause until the job queue clears up".format
+            job_queue_val = 1
 
         elif active_job_count >= 3 and \
                 job_check_count > 0 and \
                 job_check_count % 5 == 0:
-                job_check_val = 2
-
-            # job_check_msg = "*** Status Update ***\n" + str(strftime("%A, %d. %B %Y %I:%M%p", localtime())) + "\n{} active jobs remain.".format(active_job_count)
+                job_queue_val = 2
 
         else:
-            job_check_val = 0
+            job_queue_val = 0
             print("PASS")
             pass
 
@@ -583,7 +454,7 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
         print("***********************************\n\n")
         api_endpoint = api_endpoint_failover(api_endpoint)
 
-    return [job_check_val, active_job_count]
+    return [job_queue_val, active_job_count]
 
 
 def api_endpoint_failover(api_endpoint):
