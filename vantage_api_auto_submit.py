@@ -13,16 +13,15 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from subprocess import call
 from time import localtime, strftime
 
-API_ENDPOINT = None
-API_ENDPOINT_LIST = ['LIGHTSPEED1', 'LIGHTSPEED2', 'LIGHTSPEED3', 'LIGHTSPEED4'
-                ,'LIGHTSPEED5', 'LIGHTSPEED6', 'LIGHTSPEED7', 'FNDC-VANLSG6-08'
-                ,'FNDC-VANLSG6-09', 'FNDC-VANLSG6-10', 'FNDC-VANLSG6-11'
-                ]
-JOB_LIST = []
-PLATFORM = None
-ROOT_DIR_WIN = 'T:\\\\'
-ROOT_DIR_POSIX = '/Volumes/Quantum2/'
-ROOT_URI = None
+
+api_endpoint_list = ['LIGHTSPEED1', 'LIGHTSPEED2', 'LIGHTSPEED3',
+                    'LIGHTSPEED4','LIGHTSPEED5', 'LIGHTSPEED6', 'LIGHTSPEED7',
+                    'FNDC-VANLSG6-08','FNDC-VANLSG6-09', 'FNDC-VANLSG6-10',
+                    'FNDC-VANLSG6-11'
+                    ]
+
+root_dir_win = 'T:\\\\'
+root_dir_posix = '/Volumes/Quantum2/'
 
 
 def clear():
@@ -76,6 +75,7 @@ def print_intro():
             continue
 
     while True:
+        global total_duration
         total_duration = str(input("Total Duration (hrs): "))
         try:
             if total_duration.find(".")== 1:
@@ -88,6 +88,7 @@ def print_intro():
             continue
 
     while True:
+        global submit_frequency
         submit_frequency = str(input("Job Submission Interval (min): "))
         try:
             if submit_frequency.find(".")== 1:
@@ -100,6 +101,7 @@ def print_intro():
             continue
 
     while True:
+        global jobs_per_submit
         jobs_per_submit = str(input("Number of Files to Submit per Interval: "))
         try:
             jobs_per_submit = int(jobs_per_submit)
@@ -118,6 +120,7 @@ def print_intro():
             continue
 
     while True:
+        global source_dir
         source_dir = str(input("Watch folder file path (Absolute Windows Path): "))
         valid_path = path_validation(source_dir)
         if valid_path is False:
@@ -127,14 +130,15 @@ def print_intro():
             break
 
     while True:
-        API_ENDPOINT = str(input("The Vantage API Endpoint (Hostname): "))
-        global ROOT_URI
-        ROOT_URI = 'http://'+ api_endpoint + ':8676'
+        global api_endpoint
+        api_endpoint = str(input("The Vantage API Endpoint (Hostname): "))
+        global root_uri
+        root_uri = 'http://'+ api_endpoint + ':8676'
         try:
-            if api_endpoint not in API_ENDPOINT_LIST:
+            if api_endpoint not in api_endpoint_list:
                 print("\n\n{} is not a valid entry for the API Endpoint, try again.".format(api_endpoint))
             else:
-                api_endpoint_status = api_endpoint_check(ROOT_URI, api_endpoint)
+                api_endpoint_status = api_endpoint_check(root_uri, api_endpoint)
                 if api_endpoint_status == True:
                     break
                 else:
@@ -146,9 +150,10 @@ def print_intro():
 
 
     while True:
+        global target_workflow_id
         target_workflow_id = str(input("The Vantage Workflow ID: "))
         try:
-            id_request = requests.get(ROOT_URI + '/REST/workflows/'+ target_workflow_id)
+            id_request = requests.get(root_uri + '/REST/workflows/'+ target_workflow_id)
 
             if id_request.json() == {'Workflow': None}:
                 print("{} is not a valid entry for Job ID, try again.".format(target_workflow_id))
@@ -202,14 +207,15 @@ def print_intro():
 
 def platform_check():
     '''Get the OS of the server executing the code.'''
-    PLATFORM = platform.system()
-    return PLATFORM
+    global platform
+    platform = platform.system()
+    return platform
 
-def api_endpoint_check(ROOT_URI, api_endpoint):
+def api_endpoint_check(root_uri, api_endpoint):
     '''check the online status of an api endpoint'''
 
     try:
-        domain_check = requests.get(ROOT_URI + '/REST/Domain/Online')
+        domain_check = requests.get(root_uri + '/REST/Domain/Online')
         domain_check_rsp = domain_check.json()
 
         api_endpoint_status = domain_check_rsp['Online']
@@ -254,7 +260,7 @@ def clean_datetimes(date_str):
 def make_posix_path(source_dir):
     '''Create a valid POSIX path for the watch folder.'''
     source_dir_list = re.findall(r"[\w']+", source_dir)
-    posix_path = ROOT_DIR_POSIX + "/".join(source_dir_list[1:])
+    posix_path = root_dir_posix + "/".join(source_dir_list[1:])
     return posix_path
 
 
@@ -263,7 +269,7 @@ def path_validation(source_dir):
     os_platform = platform_check()
     source_dir_list = re.findall(r"[\w']+", source_dir)
 
-    posix_path = ROOT_DIR_POSIX + "/".join(source_dir_list[1:])
+    posix_path = root_dir_posix + "/".join(source_dir_list[1:])
     windows_path = PureWindowsPath(source_dir)
 
     if os_platform == 'Darwin':
@@ -304,6 +310,7 @@ def countdown(start_time):
 
 def check_vantage_status(target_workflow_id, api_endpoint):
 
+    global job_check_count
     job_check_count = 0
 
     while True:
@@ -326,9 +333,13 @@ def check_vantage_status(target_workflow_id, api_endpoint):
             msg2_list = [[0,1,2],[1,0,2],[1,1,2]]
             msg3_list = [[1,0,1],[1,1,1]]
 
+            print("")
+            print("STATUS START")
+            print(status_val)
+            print("")
+
             if status_val in msg1_list:
                 print("====================================================")
-                print("Job Check Count: " + str(job_check_count))
                 print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
                 print("Active Job Count: " + str(job_queue[1]))
                 print("Domain Load: " + str(domain_load[1]) + str(domain_load[2]))
@@ -352,6 +363,10 @@ def check_vantage_status(target_workflow_id, api_endpoint):
                 print("====================================================\n")
 
             else:
+                print("")
+                print("BREAK")
+                print(status_val)
+                print("")
                 break
 
             time.sleep(60)
@@ -368,12 +383,13 @@ def check_domain_load(job_check_count, api_endpoint):
     '''Get a Domain Load based on Transcode, CPU, Edit, and Analysis'''
 
     try:
-        ROOT_URI = "http://" + str(api_endpoint) + ":8676/"
+        global root_uri
+        root_uri = "http://" + str(api_endpoint) + ":8676/"
 
-        cpu = requests.get(ROOT_URI + '/Rest/Domain/Load/CPU')
-        transcode = requests.get(ROOT_URI + '/Rest/Domain/Load/Transcode')
-        analysis = requests.get(ROOT_URI + '/Rest/Domain/Load/Analysis')
-        edit = requests.get(ROOT_URI + '/Rest/Domain/Load/edit')
+        cpu = requests.get(root_uri + '/Rest/Domain/Load/CPU')
+        transcode = requests.get(root_uri + '/Rest/Domain/Load/Transcode')
+        analysis = requests.get(root_uri + '/Rest/Domain/Load/Analysis')
+        edit = requests.get(root_uri + '/Rest/Domain/Load/edit')
 
         service_list = ['cpu','transcode','analysis','edit']
 
@@ -411,8 +427,9 @@ def check_domain_load(job_check_count, api_endpoint):
         print("check_domain_load() - Error Mesage: " + str(err) + "\n")
         print("Attempting to switch to a new API Endpoint now.")
         print("***********************************\n\n")
-        API_ENDPOINT = api_endpoint_failover(api_endpoint)
-        continue
+        api_endpoint = api_endpoint_failover(api_endpoint)
+        check_domain_load(job_check_count, api_endpoint)
+
 
     return [domain_load_val, high_load_list, low_load_list]
 
@@ -420,26 +437,27 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
     '''Check for the number of the jobs running  in the given workflow, prevent the script from overloading the Vantage system.'''
 
     try:
-        ROOT_URI = "http://" + str(api_endpoint) + ":8676/"
+        global root_uri
+        root_uri = "http://" + str(api_endpoint) + ":8676/"
 
-        get_job_status = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/Jobs/?filter=Active')
+        get_job_status = requests.get(root_uri + '/REST/Workflows/' + target_workflow_id + '/Jobs/?filter=Active')
 
         active_jobs_json = get_job_status.json()
         active_job_count = len(active_jobs_json['Jobs'])
 
-        if active_job_count <= 15:
+        if active_job_count <= 6:
             job_queue_val = 0
 
-        elif active_job_count >= 15 and \
+        elif active_job_count >= 6 and \
             job_check_count == 0:
             job_queue_val = 1
 
-        elif active_job_count >= 15 and \
+        elif active_job_count >= 6 and \
             job_check_count > 0 and \
             job_check_count % 5 is not 0:
             job_queue_val = 1
 
-        elif active_job_count >= 15 and \
+        elif active_job_count >= 6 and \
             job_check_count > 0 and \
             job_check_count % 5 == 0:
             job_queue_val = 2
@@ -455,7 +473,8 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
         print("Attempting to switch to a new API Endpoint now.")
         print("***********************************\n\n")
         api_endpoint = api_endpoint_failover(api_endpoint)
-        check_job_queue()
+        check_domain_load(target_workflow_id, api_endpoint, job_check_count, )
+
 
     return [job_queue_val, active_job_count]
 
@@ -472,14 +491,15 @@ def api_endpoint_failover(api_endpoint):
             sdk_list = []
 
             try:
-                # print(API_ENDPOINT_LIST)
+                # print(api_endpoint_list)
                 print("\nRemoving {} from the list of available api endpoints. ".format(api_endpoint))
-                API_ENDPOINT_LIST.remove(api_endpoint)
-                # print(API_ENDPOINT_LIST)
+                api_endpoint_list.remove(api_endpoint)
+                # print(api_endpoint_list)
 
-                ROOT_URI = "http://" + str(API_ENDPOINT_LIST[0]) + ":8676/"
+                global root_uri
+                root_uri = "http://" + str(api_endpoint_list[0]) + ":8676/"
 
-                new_api_endpoint = API_ENDPOINT_LIST[0]
+                new_api_endpoint = api_endpoint_list[0]
 
                 print("\nSwitching to new API Endpoint: " + new_api_endpoint + "\n")
 
@@ -488,9 +508,9 @@ def api_endpoint_failover(api_endpoint):
                 break
 
             except requests.exceptions.RequestException as err:
-                print("\n\n{} is not active or unreachable, trying another api_endpoint.".format(new_api_endpoint) + "\n\n" + str(err))
-                if len(API_ENDPOINT_LIST) > 1:
-                    API_ENDPOINT_LIST.remove(api_endpoint)
+                print("\n{} is not active or unreachable, trying another api_endpoint.".format(new_api_endpoint) + "\n" + str(err))
+                if len(api_endpoint_list) > 1:
+                    api_endpoint_list.remove(api_endpoint)
                     continue
                 else:
                     print("Vantage cannot find an available api endpoint. Please check the Vantage SDK service on the Lighspeed servers is started and reachable.\n")
@@ -511,7 +531,7 @@ def check_job_state(files_submitted, jobs_per_submit):
 
     for job in job_list:
         if files_submitted >= jobs_per_submit * 2:
-            job_status_get = requests.get(ROOT_URI + '/REST/Jobs/' + job_id)
+            job_status_get = requests.get(root_uri + '/REST/Jobs/' + job_id)
             job_state = job_status_get.json()
 
             if job_state['State'] == 0:
@@ -562,9 +582,9 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
     files_submitted = 0
     files_skipped = 0
 
-    PLATFORM = platform_check()
+    platform = platform_check()
 
-    if PLATFORM == 'Darwin':
+    if platform == 'Darwin':
         posix_path = make_posix_path(source_dir)
         p = Path(posix_path)
     else:
@@ -608,11 +628,12 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
 def job_submit(target_workflow_id, source_dir, api_endpoint, file):
     '''Submit the file to the workflow, using the REST API.'''
 
-    ROOT_URI = "http://" + api_endpoint + ":8676"
+    global root_uri
+    root_uri = "http://" + api_endpoint + ":8676"
 
     while True:
         try:
-            job_get = requests.get(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
+            job_get = requests.get(root_uri + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
             if job_get is not None:
                     job_blob = job_get.json()
                     job_blob['JobName'] = file
@@ -621,7 +642,7 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
                 api_endpoint = check_job_queue(target_workflow_id,api_endpoint)
                 continue
 
-            job_post = requests.post(ROOT_URI + '/REST/Workflows/' + target_workflow_id + '/Submit',json=job_blob)
+            job_post = requests.post(root_uri + '/REST/Workflows/' + target_workflow_id + '/Submit',json=job_blob)
 
             job_post_response = job_post.json()
             job_id = job_post_response['JobIdentifier']
@@ -634,4 +655,4 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
             print("Attempting to switch to a new API Endpoint now.")
             print("***********************************\n")
             api_endpoint = api_endpoint_failover(api_endpoint)
-            job_submit(api_endpoint)
+            conintue
