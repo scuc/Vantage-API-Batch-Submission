@@ -9,6 +9,7 @@ import time
 
 from datetime import datetime
 from itertools import product
+from operator import itemgetter
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from subprocess import call
 from time import localtime, strftime
@@ -342,7 +343,7 @@ def check_vantage_status(target_workflow_id, api_endpoint):
                 print("====================================================")
                 print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
                 print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1]) + str(domain_load[2]))
+                print("Domain Load: " + str(domain_load[1]))
                 print("Job submission will pause until the system load decreases.")
                 print("====================================================\n")
 
@@ -350,7 +351,7 @@ def check_vantage_status(target_workflow_id, api_endpoint):
                 print("")
                 print("Job Check Count: " + str(job_check_count))
                 print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1]) + str(domain_load[2]))
+                print("Domain Load: " + str(domain_load[1]))
                 print("")
 
             elif status_val in msg3_list:
@@ -358,7 +359,7 @@ def check_vantage_status(target_workflow_id, api_endpoint):
                 print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
                 print("*** System Load - Status Update***")
                 print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1]) + str(domain_load[2]))
+                print("Domain Load: " + str(domain_load[1]))
                 print("Waiting for the system load to decrease.")
                 print("====================================================\n")
 
@@ -402,23 +403,25 @@ def check_domain_load(job_check_count, api_endpoint):
         for service in load_list:
             service_load = service['Load']
             serv_name = service_list[count]
-            service_load_list.append({serv_name: service_load})
+            service_load_list.append([serv_name,service_load])
             count += 1
+
+        get_load = itemgetter(1)
+        sorted_serviceload_list = sorted(service_load_list, key=get_load, reverse=True)
+        print(sorted_serviceload_list)
 
         high_load_list = []
         low_load_list = []
 
-        for load_dict in service_load_list:
-            for key, value in load_dict.items():
-                if value > 85:
-                    high_load_list.append((key, value))
+        for service_num in sorted_serviceload_list:
+                print("SERVICE NUM:" + str(service_num[1]))
+                if service_num[1] > 85:
+                    high_load_list.append(service_num)
                 else:
-                    low_load_list.append((key, value))
+                    low_load_list.append(service_num)
 
         if len(high_load_list) > 0:
-
             domain_load_val = 1
-
         else:
             domain_load_val = 0
 
@@ -431,7 +434,7 @@ def check_domain_load(job_check_count, api_endpoint):
         check_domain_load(job_check_count, api_endpoint)
 
 
-    return [domain_load_val, high_load_list, low_load_list]
+    return [domain_load_val, sorted_serviceload_list]
 
 def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
     '''Check for the number of the jobs running  in the given workflow, prevent the script from overloading the Vantage system.'''
@@ -448,19 +451,8 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
         if active_job_count <= 6:
             job_queue_val = 0
 
-        elif active_job_count >= 6 and \
-            job_check_count == 0:
+        elif active_job_count >= 6:
             job_queue_val = 1
-
-        elif active_job_count >= 6 and \
-            job_check_count > 0 and \
-            job_check_count % 5 is not 0:
-            job_queue_val = 1
-
-        elif active_job_count >= 6 and \
-            job_check_count > 0 and \
-            job_check_count % 5 == 0:
-            job_queue_val = 2
 
         else:
             job_queue_val = 0
@@ -473,7 +465,7 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
         print("Attempting to switch to a new API Endpoint now.")
         print("***********************************\n\n")
         api_endpoint = api_endpoint_failover(api_endpoint)
-        check_domain_load(target_workflow_id, api_endpoint, job_check_count, )
+        check_domain_load(target_workflow_id, api_endpoint, job_check_count)
 
 
     return [job_queue_val, active_job_count]
