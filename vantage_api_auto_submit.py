@@ -145,7 +145,10 @@ def print_intro():
                 if api_endpoint_status == True:
                     break
                 else:
-                    print("API_ENDPOINT_STATUS: " + str(api_endpoint_status))
+                    if "[Errno 61] Connection refused'" in api_endpoint_status:
+                        print('Error: Please verify that the Vantage SDK Service is started and reachable on {}.'.format(api_endpoint) + " Or choose another endpoint." + '\n\n')
+                    else:
+                        print("API Status: " + api_endpoint_status)
                     continue
         except requests.exceptions.RequestException as err:
             print('\nError: Please verify that the Vantage SDK Service is started and reachable on {}.'.format(api_endpoint) + '\n\n' + 'Error Message: ' + str(err) + '\n\n')
@@ -153,6 +156,7 @@ def print_intro():
 
 
     while True:
+        root_uri = 'http://'+ api_endpoint + ':8676'
         global target_workflow_id
         target_workflow_id = str(input("The Vantage Workflow ID: "))
         try:
@@ -210,9 +214,8 @@ def print_intro():
 
 def platform_check():
     '''Get the OS of the server executing the code.'''
-    global platform
-    platform = platform.system()
-    return platform
+    os_platform = platform.system()
+    return os_platform
 
 def api_endpoint_check(api_endpoint):
     '''check the online status of an api endpoint'''
@@ -223,27 +226,30 @@ def api_endpoint_check(api_endpoint):
         frame,filename,line_number,function_name,lines,index = source_frame
         source_func = source_frame[3]
 
-        if source_func == 'print_into':
-            print("SOURCE FUNC: " + source_func + " 1")
+        if source_func == 'print_intro':
+            # print("SOURCE FUNC 1: " + source_func)
             try:
                 domain_check = requests.get(root_uri + '/REST/Domain/Online')
                 domain_check_rsp = domain_check.json()
                 api_endpoint_status = domain_check_rsp['Online']
 
                 if api_endpoint_status is not True:
-                    api_endpoint_status = "\n\n{} is not active or unreachable, please check the Vantage SDK service on the host and try again.".format(api_endpoint) + "\n\n" + str(err) + "\n\n"
+                    api_endpoint_status = "\n\n{} is not active or unreachable, please check the Vantage SDK service on the host and try again.".format(api_endpoint.upper()) + "\n\n" + str(err) + "\n\n"
                 else:
                     pass
 
             except requests.exceptions.RequestException as excp:
                 api_endpoint_status = str(excp)
+                print("\n\n***********************************")
+                print("api_endpoint_check() - Error Message: " + api_endpoint_status)
+                print("***********************************\n\n")
 
             return api_endpoint_status
 
 
         elif source_func in ['check_vantage_status', 'check_domain_load', 'check_job_queue', 'api_submit', 'job_submit']:
 
-            print("SOURCE FUNC: " + source_func + " 2")
+            # print("SOURCE FUNC 2: " + source_func)
 
             try:
                 domain_check = requests.get(root_uri + '/REST/Domain/Online')
@@ -314,6 +320,7 @@ def make_posix_path(source_dir):
 
 def path_validation(source_dir):
     '''Validate the user input for the watch folder file path.'''
+    global os_platform
     os_platform = platform_check()
     source_dir_list = re.findall(r"[\w']+", source_dir)
 
@@ -358,6 +365,22 @@ def countdown(start_time):
 
 def check_vantage_status(target_workflow_id, api_endpoint):
 
+    '''
+    active_jobs_val
+    0 num of active jobs is below threshold
+    1 num of active jobs is above threshold, check count remainder != 0
+    2 num of active jobs is above threshold, check count remainder == 0
+
+    domain_load_val
+    0 no domain services are above set threshold level.
+    1 one or more of the domain services are above set threshold level.
+
+    job check count
+    0 check count is zero
+    1 check count is a multple of 10
+    2 check count is not a multiple of 10
+    '''
+
     global job_check_count
     job_check_count = 0
 
@@ -371,7 +394,7 @@ def check_vantage_status(target_workflow_id, api_endpoint):
 
             if job_check_count == 0:
                 job_count_val = 0
-            elif job_check_count % 5 is 0:
+            elif job_check_count % 10 is 0:
                 job_count_val = 1
             else:
                 job_count_val = 2
@@ -388,7 +411,7 @@ def check_vantage_status(target_workflow_id, api_endpoint):
             # print("")
 
             if status_val in msg1_list:
-                print("====================================================")
+                print("\n====================================================")
                 print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
                 print("Active Job Count: " + str(job_queue[1]))
                 print("Domain Load: " + str(domain_load[1]))
@@ -412,9 +435,9 @@ def check_vantage_status(target_workflow_id, api_endpoint):
                 print("====================================================\n")
 
             else:
-                print("")
-                print("BREAK" + str(status_val))
-                print("")
+                # print("")
+                # print("BREAK" + str(status_val))
+                # print("")
                 break
 
             time.sleep(60)
@@ -621,9 +644,9 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
     files_submitted = 0
     files_skipped = 0
 
-    platform = platform_check()
+    os_platform = platform_check()
 
-    if platform == 'Darwin':
+    if os_platform == 'Darwin':
         posix_path = make_posix_path(source_dir)
         p = Path(posix_path)
     else:
@@ -636,7 +659,9 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
         '''Submit batches of jobs at set intervals for the duration specified.'''
         try:
             file = sorted_list[list_number]
-            file_match = re.match('TEST_'+ r'([0-9]{7})'+'.mov', file)
+            # file_match = re.match('TEST_'+ r'([0-9]{7})'+'.mov', file)
+            file_match = re.match(r'([0-9]{7})'+'.MOV', file)
+
 
             if files_submitted != 0 and files_submitted % jobs_per_submit == 0:
                 print('Waiting ' + str(submit_frequency) + ' minutes\n')
