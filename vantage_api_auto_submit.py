@@ -415,7 +415,7 @@ def check_vantage_status(target_workflow_id, api_endpoint):
                 print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
                 print("Active Job Count: " + str(job_queue[1]))
                 print("Domain Load: " + str(domain_load[1]))
-                print("Job submission will pause until the system load decreases.")
+                print("Job submission is paused until the system load decreases.")
                 print("====================================================\n")
 
             elif status_val in msg2_list:
@@ -528,11 +528,11 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
             active_jobs_json = get_job_status.json()
             active_job_count = len(active_jobs_json['Jobs'])
 
-            if active_job_count <= 6:
+            if active_job_count <= 15:
                 job_queue_val = 0
                 break
 
-            elif active_job_count >= 6:
+            elif active_job_count >= 15:
                 job_queue_val = 1
                 break
 
@@ -578,7 +578,7 @@ def api_endpoint_failover(api_endpoint):
                     print("Vantage cannot find an available api endpoint. Please check the Vantage SDK service on the Lighspeed servers is started and reachable.\n")
                     print("After confirming an available API Enpoint, please hit return to contine.")
                     continue
-        print("\nRETURN NEW API ENDPOINT: " + api_endpoint + "\n")
+        # print("\nRETURN NEW API ENDPOINT: " + api_endpoint + "\n")
         return api_endpoint
 
 
@@ -623,6 +623,7 @@ def jobs_complete(files_submitted, files_skipped):
     '''Print a summary message in the terminal window at the end of the batch run.'''
     print('\n===========================================')
     print('\nJobs Complete!')
+    print(      str(strftime("%A, %d %B %Y %I:%M%p", localtime())))
     print(str(files_submitted - files_skipped) + ' files were submitted')
     print(str(files_skipped) + ' files were skipped')
     print('\n===========================================')
@@ -660,7 +661,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
         try:
             file = sorted_list[list_number]
             # file_match = re.match('TEST_'+ r'([0-9]{7})'+'.mov', file)
-            file_match = re.match(r'([0-9]{7})'+'.MOV', file)
+            file_match = re.match(r'([0-9]{7})'+'.mov', file)
 
 
             if files_submitted != 0 and files_submitted % jobs_per_submit == 0:

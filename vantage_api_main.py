@@ -21,7 +21,6 @@ def vantage_main():
     api_endpoint = vn_Vars[6]
     target_workflow_id = vn_Vars[7]
 
-
     print('===========================================================')
     print('')
 
