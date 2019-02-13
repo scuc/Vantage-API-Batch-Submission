@@ -38,7 +38,7 @@ def clear():
 # =================== BEGIN PROMPT FOR USER INPUT =================== #
 
 
-def print_intro():
+def print_intro(logger):
 
     print("=========================================================== " + "\n"
           + '''           Vantage Workflow Submission Script \n
@@ -70,6 +70,7 @@ def print_intro():
                 print(year, month, day, hour, minute)
 
                 start_time = datetime(year, month, day, hour, minute)
+                logger.debug("testlog: " + str(start_time))
 
             if start_time < present:
                 print("Start Time must be a time in the future, try again.")
