@@ -24,7 +24,7 @@ global sorted_serviceload_list
 api_endpoint_list = ['LIGHTSPEED1', 'LIGHTSPEED2', 'LIGHTSPEED3',
                     'LIGHTSPEED4','LIGHTSPEED5', 'LIGHTSPEED6', 'LIGHTSPEED7',
                     'FNDC-VANLSG6-08','FNDC-VANLSG6-09', 'FNDC-VANLSG6-10',
-                    'FNDC-VANLSG6-11'
+                    'FNDC-VANLSG6-11', '10.143.6.151'
                     ]
 root_dir_win = 'T:\\\\'
 root_dir_posix = '/Volumes/Quantum2/'
@@ -243,6 +243,7 @@ def api_endpoint_check(api_endpoint):
                 print("\n\n***********************************")
                 print("api_endpoint_check() - Error Message: " + api_endpoint_status)
                 print("***********************************\n\n")
+                print("API_ENDPOINT CHECK - EXCP 01 - LINE 241")
 
             return api_endpoint_status
 
@@ -266,6 +267,7 @@ def api_endpoint_check(api_endpoint):
                 print("\n\n***********************************")
                 print("api_endpoint_check() - Error Message: " + str(excp))
                 print("***********************************\n\n")
+                print("API_ENDPOINT CHECK - EXCP 02 - LINE 265")
                 api_endpoint = api_endpoint_failover(api_endpoint)
                 return api_endpoint
 
@@ -276,8 +278,7 @@ def api_endpoint_check(api_endpoint):
         print("\n\n***********************************")
         print("api_endpoint_check() - Error Message: " + str(excp))
         print("***********************************\n\n")
-
-    print("API_ENDPOINT CHECK - LINE 275")
+        print("API_ENDPOINT CHECK - EXCP 03 - LINE 275")
 
 
 def clean_datetimes(date_str):
@@ -401,6 +402,11 @@ def check_vantage_status(target_workflow_id, api_endpoint):
 
             status_val = [job_queue[0], domain_load[0], job_count_val]
 
+            # break_list = [[0,0,0],[0,0,1],[1,0,1],[0,0,2],[1,0,2],[1,0,0]]
+            # msg1_list = [[0,1,0],[0,1,1],[1,1,0]]
+            # msg2_list = [[0,1,2],[1,1,2]]
+            # msg3_list = [[1,1,1]]
+
             break_list = [[0,0,0],[0,0,1],[0,0,2]]
             msg1_list = [[0,1,0],[0,1,1],[1,0,0],[1,1,0]]
             msg2_list = [[0,1,2],[1,0,2],[1,1,2]]
@@ -492,7 +498,7 @@ def check_domain_load(job_check_count, api_endpoint):
 
         for service_num in sorted_serviceload_list:
                 # print("SERVICE NUM:" + str(service_num[1]))
-                if service_num[1] > 85:
+                if service_num[1] > 80:
                     high_load_list.append(service_num)
                 else:
                     low_load_list.append(service_num)
@@ -528,11 +534,11 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
             active_jobs_json = get_job_status.json()
             active_job_count = len(active_jobs_json['Jobs'])
 
-            if active_job_count <= 15:
+            if active_job_count <= 50:
                 job_queue_val = 0
                 break
 
-            elif active_job_count >= 15:
+            elif active_job_count >= 50:
                 job_queue_val = 1
                 break
 
@@ -653,7 +659,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
     else:
         pass
 
-    file_list = [x.name for x in p.glob('*.mov') if x.is_file()]
+    file_list = [x.name for x in p.glob('*.MOV') if x.is_file()]
     sorted_list = sorted(file_list)
 
     for files_submitted in range(int(total_jobs)):
@@ -661,7 +667,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
         try:
             file = sorted_list[list_number]
             # file_match = re.match('TEST_'+ r'([0-9]{7})'+'.mov', file)
-            file_match = re.match(r'([0-9]{7})'+'.mov', file)
+            file_match = re.match(r'([0-9]{7})'+'.MOV', file)
 
 
             if files_submitted != 0 and files_submitted % jobs_per_submit == 0:

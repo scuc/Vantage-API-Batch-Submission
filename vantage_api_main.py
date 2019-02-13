@@ -3,13 +3,35 @@
 
 import vantage_api_auto_submit as vn
 
+import logging
+import os
+import yaml
+
 from time import strftime
 
 
-# set the variables for the script.
+def setup_logging(
+    default_path='logging_config.yaml',
+    default_level=logging.DEBUG
+    ):
+
+    """Setup logging configuration
+    """
+    path = default_path
+
+    with open(path, 'rt') as f:
+        config = yaml.safe_load(f.read())
+    logging.config.dictConfig(config)
+    logger = logging.getLogger(__name__)
+
+    return logger
+
 
 def vantage_main():
+    '''set the variables for the script.'''
 
+    logger = setup_logging()
+    logger.debug('This message should go to the log file')
     vn_Vars = vn.print_intro()
 
     start_time = vn_Vars[0]
