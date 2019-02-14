@@ -24,7 +24,7 @@ global sorted_serviceload_list
 api_endpoint_list = ['LIGHTSPEED1', 'LIGHTSPEED2', 'LIGHTSPEED3',
                     'LIGHTSPEED4','LIGHTSPEED5', 'LIGHTSPEED6', 'LIGHTSPEED7',
                     'FNDC-VANLSG6-08','FNDC-VANLSG6-09', 'FNDC-VANLSG6-10',
-                    'FNDC-VANLSG6-11', '10.143.6.151'
+                    'FNDC-VANLSG6-11'
                     ]
 root_dir_win = 'T:\\\\'
 root_dir_posix = '/Volumes/Quantum2/'
@@ -226,7 +226,6 @@ def api_endpoint_check(api_endpoint):
         source_func = source_frame[3]
 
         if source_func == 'print_intro':
-            # print("SOURCE FUNC 1: " + source_func)
             try:
                 domain_check = requests.get(root_uri + '/REST/Domain/Online')
                 domain_check_rsp = domain_check.json()
@@ -238,18 +237,17 @@ def api_endpoint_check(api_endpoint):
                     pass
 
             except requests.exceptions.RequestException as excp:
+                excp_msg1 = f"Exeception raised on API endpoint check."
+                logger.debug(excp_msg1)
                 api_endpoint_status = str(excp)
-                print("\n\n***********************************")
-                print("api_endpoint_check() - Error Message: " + api_endpoint_status)
-                print("***********************************\n\n")
-                print("API_ENDPOINT CHECK - EXCP 01 - LINE 241")
+                print("Exception Message #1:" + eexcp_msg1)
+                print(api_endpoint_status)
+
 
             return api_endpoint_status
 
 
         elif source_func in ['check_vantage_status', 'check_domain_load', 'check_job_queue', 'api_submit', 'job_submit']:
-
-            # print("SOURCE FUNC 2: " + source_func)
 
             try:
                 domain_check = requests.get(root_uri + '/REST/Domain/Online')
@@ -260,24 +258,26 @@ def api_endpoint_check(api_endpoint):
                     return api_endpoint
 
                 else:
-                    print("API END POINT = WTF")
+                    api_endpoint = api_endpoint_failover(api_endpoint)
 
             except requests.exceptions.RequestException as excp:
-                print("\n\n***********************************")
-                print("api_endpoint_check() - Error Message: " + str(excp))
-                print("***********************************\n\n")
-                print("API_ENDPOINT CHECK - EXCP 02 - LINE 265")
+                excp_msg2 = f"Exeception raised on API endpoint check."
+                logger.debug(excp_msg2)
+                api_endpoint_status = str(excp)
+                print(excp_msg2)
+                print("Exception Message #2:" + eapi_endpoint_status)
                 api_endpoint = api_endpoint_failover(api_endpoint)
                 return api_endpoint
 
         else:
-            print("FOOOO!")
+            api_endpoint = api_endpoint_failover(api_endpoint)
 
     except Exception as excp:
-        print("\n\n***********************************")
-        print("api_endpoint_check() - Error Message: " + str(excp))
-        print("***********************************\n\n")
-        print("API_ENDPOINT CHECK - EXCP 03 - LINE 275")
+        excp_msg3 = f"Exeception raised on API endpoint check."
+        logger.debug(excp_msg3)
+        api_endpoint_status = str(excp)
+        print("Exception Message #3:" + excp_msg3)
+        print(api_endpoint_status)
 
 
 def clean_datetimes(date_str):
@@ -444,6 +444,8 @@ def check_vantage_status(target_workflow_id, api_endpoint):
                 Domain Load:  {str(domain_load[1])}\
                 ===========================================================\n\
                 "
+                logger.debug(msg3)
+                print(msg3)
 
             else:
                 break
@@ -452,9 +454,11 @@ def check_vantage_status(target_workflow_id, api_endpoint):
             job_check_count += 1
 
         except Exception as excp:
-            print("\n\n***********************************")
-            print("check_vantage_status() - Error Message: " + str(excp))
-            print("***********************************\n\n")
+            vanstatus_excp_msg = f"Exeception raised on a Vantage Dominan Status check."
+            logger.debug(vanstatus_excp_msg)
+            print(vanstatus_excp_msg)
+            print(str(excp))
+
             if Exception is requests.exceptions.RequestException:
                 api_endpoint = api_endpoint_check(api_endpoint)
                 continue
@@ -513,10 +517,12 @@ def check_domain_load(job_check_count, api_endpoint):
         else:
             domain_load_val = 0
 
-    except requests.exceptions.RequestException as err:
-        print("\n\n***********************************")
-        print("check_domain_load() - Error Mesage: " + str(err))
-        print("***********************************\n\n")
+    except requests.exceptions.RequestException as excp:
+        domainck_excp_msg = f"Exeception raised on a Vantage Dominan Load check."
+        logger.debug(domainck_excp_msg)
+        print(domainck_excp_msg)
+        print(str(excp))
+
         api_endpoint = api_endpoint_failover(api_endpoint)
         check_domain_load(job_check_count, api_endpoint)
 
@@ -549,13 +555,14 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
                 # print("PASS JOB QUEUE VAL")
                 pass
 
-        except requests.exceptions.RequestException as err:
-            print("\n***********************************")
-            print("check_job_queue() - Error Mesage: " + str(err))
-            print("***********************************\n")
+        except requests.exceptions.RequestException as excp:
+            jobqueue_excp_msg = f"Exeception raised on a Vantage Job Queue check."
+            logger.debug(jobqueue_excp_msg)
+            print(jobqueue_excp_msg)
+            print(str(excp))
+
             api_endpoint = api_endpoint_failover(api_endpoint)
             check_domain_load(job_check_count, api_endpoint)
-
 
     return [job_queue_val, active_job_count]
 
@@ -564,17 +571,24 @@ def api_endpoint_failover(api_endpoint):
 
         while True:
             try:
-                print("==================================================")
-                print(      str(strftime("%A, %d %B %Y %I:%M%p", localtime())))
-                print("Removing {} from the list of available api endpoints. ".format(api_endpoint))
-                api_endpoint_list.remove(api_endpoint)
-                print("Attempting to switch to a new API Endpoint now.          ")
+                api_fail = f"\
+                =======================================================\
+                {str(strftime("%A, %d %B %Y %I:%M%p", localtime()))} \
+                Removing {api_endpoint} from the list of available api endpoints.\
+                Attempting to switch to a new API Endpoint now.\
+                =======================================================\
+                "
+                logger.debug(api_fail)
+                print(api_fail)
+
                 new_api_endpoint = api_endpoint_list[0]
                 api_endpoint = new_api_endpoint
                 root_uri = "http://" + api_endpoint + ":8676/"
-                print("Switching to new API Endpoint: " + api_endpoint)
-                print("==================================================\n")
 
+                api_new = f"\
+                Switching to new API Endpoint:  {api_endpoint}"
+                logger.debug(api_new)
+                print(api_new)
                 break
 
             except requests.exceptions.RequestException as err:
@@ -617,27 +631,18 @@ def check_job_state(files_submitted, jobs_per_submit):
 
     return failed_jobs, sucessful_jobs
 
-def jobs_log():
-    '''CURRENTLY UNUSED - create a log of output from the script.'''
-    log_name = str(start_time) + "_VantageAPI_Log.txt"
-    logging.basicConfig(
-        filename=log_name,
-        level=logging.DEBUG,
-        format="%(asctime)s:%(levelname)s:%(message)s"
-        )
-
-
 def jobs_complete(files_submitted, files_skipped):
     '''Print a summary message in the terminal window at the end of the batch run.'''
-    print('\n===========================================')
-    print('\nJobs Complete!')
-    print(      str(strftime("%A, %d %B %Y %I:%M%p", localtime())))
-    print(str(files_submitted - files_skipped) + ' files were submitted')
-    print(str(files_skipped) + ' files were skipped')
-    print('\n===========================================')
-    # print(str(failed_jobs) + ' files failed.')
-    # print(str(sucessful_jobs) + ' files were sucessful.')
-
+    complete_msg = f"\n\
+    ==================================================================\
+                           Jobs Complete!                      \
+    {str(strftime("%A, %d %B %Y %I:%M%p", localtime()))} \
+    {str(files_submitted - files_skipped)} files were submitted. \
+    {str(files_skipped)} files were skipped. \
+    ==================================================================\
+    "
+    logger.debug(complete_msg)
+    print(complete_msg)
 
 # ==================== API SUBMIT STARTS HERE ============================= #
 
@@ -677,27 +682,34 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
 
                 time.sleep(submit_frequency * 60)
 
-                print('Submitting Files ' + str(files_submitted + 1) + " to " +str(jobs_per_submit + files_submitted) + ' of ' +
-                    str(int(total_jobs)) + ' at ' + str(strftime('%H:%M:%S', localtime())))
+                sub_files_msg = f"\
+                Submitting Files {str(files_submitted + 1)} to {str(jobs_per_submit + files_submitted)} at {str(strftime('%H:%M:%S', localtime()))}"
+                logger.debug(sub_files_msg)
+                print(sub_files_msg)
 
             if file_match is not None:
-                print("Submitting: " + file)
+                file_submit_msg = f"Submitting: {file}"
+                logger.debug(file_submit_msg)
+                print(file_submit_msg)
                 api_endpoint = job_submit(target_workflow_id, source_dir, api_endpoint, file)
                 files_submitted += 1
                 list_number += 1
             else:
-                print("Skipping: " + file)
+                file_skip_msg = f"Skipping: {file}"
+                logger.debug(file_skip_msg)
+                print(file_skip_msg)
                 files_skipped += 1
                 list_number += 1
                 continue
 
-        except Exception as err:
-            if err is IndexError:
+        except Exception as excp:
+            if excp is IndexError:
                 break
             else:
-                print("\n***********************************")
-                print("api_submit() - Error Mesage: " + str(err))
-                print("***********************************\n")
+                apisubmit_excp_msg = f"Exeception raised on a Vantage API Submit."
+                logger.debug(apisubmit_excp_msg)
+                print(apisubmit_excp_msg)
+                print(str(excp))
                 break
 
     jobs_complete(files_submitted, files_skipped)
@@ -721,17 +733,21 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
             else:
                 continue
 
+            job_post_msg = f"posting job with values: {job_blob}"
+            logger.debug(job_post_msg)
+
             job_post = requests.post(root_uri + '/REST/Workflows/' + target_workflow_id + '/Submit',json=job_blob)
 
             job_post_response = job_post.json()
             job_id = job_post_response['JobIdentifier']
+            job_id_msg = f"posted job with id: {job_id}"
             break
 
-        except requests.exceptions.RequestException as err:
-
-            print("\n***********************************")
-            print("api_submit() Error Mesage: " + str(err))
-            print("***********************************\n")
+        except requests.exceptions.RequestException as excp:
+            jobsubmit_excp_msg = f"Exeception raised on a Vantage Job Submit."
+            logger.debug(jobsubmit_excp_msg)
+            print(jobsubmit_excp_msg)
+            print(str(excp))
             api_endpoint = api_endpoint_failover(api_endpoint)
             job_submit(target_workflow_id, source_dir, api_endpoint, file)
             break
