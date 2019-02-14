@@ -42,28 +42,22 @@ def vantage_main():
     api_endpoint = vn_Vars[6]
     target_workflow_id = vn_Vars[7]
 
-    start_message = f"===========================================================\n  Starting the Vantage workflow with these values : \n                 Jobs will start on : {str(start_time)}"
-
+    start_message = f"\
+    ================================================================\n \
+        Starting the Vantage workflow with these values : \n \
+        Jobs will start on :   {str(start_time)} \n \
+        Total Batch Duration (hrs) :   {str(total_duration)} \n \
+        Submission Frequency (min) :   {str(submit_frequency)} \n \
+        Jobs per Submission :   {str(jobs_per_submit)} \n \
+        Jobs in Rotation :   {str(sources_in_rotation)} \n \
+        Watch Folder Path (Win):   {str(source_dir)} \n \
+        Vantage API Endpoint :   {str(api_endpoint)} \n \
+        Vantage Job ID :    {str(target_workflow_id)} \n \
+    ===========================================================\n"
 
     logger.debug(start_message)
 
-    print('===========================================================')
-    print('')
-
-    print("Starting the Vantage workflow with these values : ")
-    print('')
-
-    print("Jobs will start on : " + str(start_time))
-    print("Total Batch Duration (hrs) : " + str(total_duration))
-    print("Submission Frequency (min) : " + str(submit_frequency))
-    print("Jobs per Submission : " + str(jobs_per_submit))
-    print("Jobs in Rotation : " + str(sources_in_rotation))
-    print("Watch Folder Path (Win): " + str(source_dir))
-    print("Vantage API Endpoint : " + str(api_endpoint))
-    print("Vantage Job ID : " + str(target_workflow_id))
-
-    print('')
-    print('===========================================================')
+    print(start_message)
 
     vn.countdown(start_time)
 

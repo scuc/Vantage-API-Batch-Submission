@@ -173,25 +173,22 @@ def print_intro(logger):
             print('\nError: Please verify that the Vantage SDK Service is started and reachable on {}.'.format(api_endpoint) + '\n\n' + 'Error Message: ' + str(err) + '\n\n')
 
     while True:
-        print('===========================================================')
-        print('')
+        start_message = f"\
+        ================================================================\n \
+            Starting the Vantage workflow with these values : \n \
+            Jobs will start on :   {str(start_time)} \n \
+            Total Batch Duration (hrs) :   {str(total_duration)} \n \
+            Submission Frequency (min) :   {str(submit_frequency)} \n \
+            Jobs per Submission :   {str(jobs_per_submit)} \n \
+            Jobs in Rotation :   {str(sources_in_rotation)} \n \
+            Watch Folder Path (Win):   {str(source_dir)} \n \
+            Vantage API Endpoint :   {str(api_endpoint)} \n \
+            Vantage Job ID :    {str(target_workflow_id)} \n \
+        ===========================================================\n"
 
-        print("Starting the Vantage workflow with these values : ")
-        print('')
+        logger.debug(start_message)
 
-        print("Jobs will start on : " + str(start_time))
-        print("Total Batch Duration (hrs) : " + str(total_duration))
-        print("Submission Frequency (min) : " + str(submit_frequency))
-        print("Jobs per Submission : " + str(jobs_per_submit))
-        print("Total Jobs in Batch : " + str(sources_in_rotation))
-        print("Watch Folder Path (Win): " + str(source_dir))
-        print("Vantage API Endpoint : " + str(api_endpoint))
-        print("Vantage Job ID : " + str(target_workflow_id))
-
-        print('')
-        print('===========================================================')
-        print('')
-        print('')
+        print(start_message)
 
         workflow_confirm = str(input("Submit All Parameters Now? (y/n) : "))
 
@@ -199,7 +196,7 @@ def print_intro(logger):
             break
         elif workflow_confirm.lower() in ('no', 'n'):
             clear()
-            print_intro()
+            print_intro(logger)
         else:
             print("{} is not a valid choice.".format(workflow_confirm))
             down_convert = down_convert = str(input("Please select Yes or No (Y/N): "))
@@ -216,6 +213,7 @@ def print_intro(logger):
 def platform_check():
     '''Get the OS of the server executing the code.'''
     os_platform = platform.system()
+    logger.debug("os platform detected: " + os_platform)
     return os_platform
 
 def api_endpoint_check(api_endpoint):
@@ -418,33 +416,36 @@ def check_vantage_status(target_workflow_id, api_endpoint):
             # print("")
 
             if status_val in msg1_list:
-                print("\n====================================================")
-                print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
-                print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1]))
-                print("Job submission is paused until the system load decreases.")
-                print("====================================================\n")
+                msg1 = f"\n\
+                ===========================================================\
+                {str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))}\
+                Active Job Count:  {str(job_queue[1])} \
+                Domain Load:  {str(domain_load[1])} \
+                Job submission is paused until the system load decreases.\
+                ===========================================================\n"
+                logger.debug(msg1)
+                print(msg1)
 
             elif status_val in msg2_list:
-                print("")
-                print("Job Check Count: " + str(job_check_count))
-                print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1]))
-                print("")
+                msg2 =f"\n\
+                Job Check Count:  {str(job_check_count)}\
+                Active Job Count:  {str(job_queue[1])}\
+                Domain Load:   {str(domain_load[1])}\
+                "
+                logger.debug(msg2)
+                print(msg2)
 
             elif status_val in msg3_list:
-                print("\n====================================================")
-                print(str(strftime("%A, %d. %B %Y %I:%M%p", localtime())))
-                print("*** System Load - Status Update ***")
-                print("Active Job Count: " + str(job_queue[1]))
-                print("Domain Load: " + str(domain_load[1]))
-                print("Waiting for the system load to decrease.")
-                print("====================================================\n")
+                msg3 =f"\n\
+                ===========================================================\
+                {str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))}\
+                ******* System Load - Status Update *******\
+                Active Job Count:  {str(job_queue[1])}\
+                Domain Load:  {str(domain_load[1])}\
+                ===========================================================\n\
+                "
 
             else:
-                # print("")
-                # print("BREAK" + str(status_val))
-                # print("")
                 break
 
             time.sleep(60)
