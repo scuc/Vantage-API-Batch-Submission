@@ -5,10 +5,11 @@ import vantage_api_auto_submit as vn
 
 from logging.handlers import TimedRotatingFileHandler
 
-def vantage_main():
+def set_logger():
     """Setup logging configuration
     """
-    logger = logging.getLogger(__name__)
+    print("SET LOGGER")
+    logger = logging.getLogger("vantage_api_auto_submit")
     logger.setLevel(logging.DEBUG)
     handler = TimedRotatingFileHandler(filename='vantage_api', when='midnight', encoding="utf8")
     handler.suffix = '_' + '%Y%m%d%H%M'+'.log'
@@ -17,7 +18,12 @@ def vantage_main():
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
+    return logger
+
+def vantage_main():
     '''set the variables for the script.'''
+
+    set_logger()
 
     vn_Vars = vn.print_intro()
 

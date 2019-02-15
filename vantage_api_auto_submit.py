@@ -16,11 +16,11 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from subprocess import call
 from time import localtime, strftime
 
-global global_api_endpoint
-global api_endpoint_list
-global domain_load_val
-global root_uri
-global sorted_serviceload_list
+# global global_api_endpoint
+# global api_endpoint_list
+# global domain_load_val
+# global root_uri
+# global sorted_serviceload_list
 
 api_endpoint_list = ['LIGHTSPEED1', 'LIGHTSPEED2', 'LIGHTSPEED3',
                     'LIGHTSPEED4','LIGHTSPEED5', 'LIGHTSPEED6', 'LIGHTSPEED7',
@@ -30,13 +30,15 @@ api_endpoint_list = ['LIGHTSPEED1', 'LIGHTSPEED2', 'LIGHTSPEED3',
 root_dir_win = 'T:\\\\'
 root_dir_posix = '/Volumes/Quantum2/'
 
+logger = logging.getLogger(__name__)
+
 
 def clear():
     '''check and make call for specific operating system'''
     _ = call('clear' if os.name =='posix' else 'cls')
 
 
-# =================== BEGIN PROMPT FOR USER INPUT =================== #
+# =================== BEGIN CONSOLE PROMPT FOR USER INPUT =================== #
 
 
 def print_intro():
@@ -645,26 +647,25 @@ def jobs_complete(files_submitted, files_skipped):
     print(complete_msg)
 
 
-def setup_logging():
-    """Setup logging configuration
-    """
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    handler = TimedRotatingFileHandler(filename='vantage_api', when='midnight', encoding="utf8")
-    handler.suffix = '_' + '%Y%m%d%H%M'+'.log'
-    formatter = logging.Formatter("%(asctime)s | %(levelname)s | Function: %(funcName)s() | Line %(lineno)s | %(message)s")
+# def set_logger():
+#     """Setup logging configuration
+#     """
+#     print("SET LOGGER")
+#     logger = logging.getLogger(__name__)
+#     logger.setLevel(logging.DEBUG)
+#     handler = TimedRotatingFileHandler(filename='vantage_api', when='midnight', encoding="utf8")
+#     handler.suffix = '_' + '%Y%m%d%H%M'+'.log'
+#     formatter = logging.Formatter("%(asctime)s | %(levelname)s | Function: %(funcName)s() | Line %(lineno)s | %(message)s")
 
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+#     handler.setFormatter(formatter)
+#     logger.addHandler(handler)
 
-    return logger
+#     return logger
 
 # ==================== API SUBMIT STARTS HERE ============================= #
 
 
 def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, api_endpoint, target_workflow_id):
-
-    logger = setup_logging()
 
     jobs_per_hour = (60 / submit_frequency) * jobs_per_submit
     total_jobs = jobs_per_hour * total_duration
@@ -699,8 +700,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
 
                 time.sleep(submit_frequency * 60)
 
-                sub_files_msg = f"\
-                Submitting Files {str(files_submitted + 1)} to {str(jobs_per_submit + files_submitted)} at {str(strftime('%H:%M:%S', localtime()))}"
+                sub_files_msg = f"Submitting Files {str(files_submitted + 1)} to {str(jobs_per_submit + files_submitted)} at {str(strftime('%H:%M:%S', localtime()))}"
                 logger.debug(sub_files_msg)
                 print(sub_files_msg)
 
