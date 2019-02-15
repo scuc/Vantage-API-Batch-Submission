@@ -188,7 +188,7 @@ def print_intro():
             Vantage Job ID :    {str(target_workflow_id)} \n \
         ===========================================================\n"
 
-        logger.debug(start_message)
+        logger.info(start_message)
 
         print(start_message)
 
@@ -238,8 +238,8 @@ def api_endpoint_check(api_endpoint):
                     pass
 
             except requests.exceptions.RequestException as excp:
-                excp_msg1 = f"Exeception raised on API endpoint check."
-                logger.debug(excp_msg1)
+                excp_msg1 = f"Exception raised on API endpoint check."
+                logger.exception(excp_msg1)
                 api_endpoint_status = str(excp)
                 print("Exception Message #1:" + eexcp_msg1)
                 print(api_endpoint_status)
@@ -262,8 +262,8 @@ def api_endpoint_check(api_endpoint):
                     api_endpoint = api_endpoint_failover(api_endpoint)
 
             except requests.exceptions.RequestException as excp:
-                excp_msg2 = f"Exeception raised on API endpoint check."
-                logger.debug(excp_msg2)
+                excp_msg2 = f"Exception raised on API endpoint check."
+                logger.exception(excp_msg2)
                 api_endpoint_status = str(excp)
                 print(excp_msg2)
                 print("Exception Message #2:" + eapi_endpoint_status)
@@ -274,8 +274,8 @@ def api_endpoint_check(api_endpoint):
             api_endpoint = api_endpoint_failover(api_endpoint)
 
     except Exception as excp:
-        excp_msg3 = f"Exeception raised on API endpoint check."
-        logger.debug(excp_msg3)
+        excp_msg3 = f"Exception raised on API endpoint check."
+        logger.exception(excp_msg3)
         api_endpoint_status = str(excp)
         print("Exception Message #3:" + excp_msg3)
         print(api_endpoint_status)
@@ -424,7 +424,7 @@ def check_vantage_status(target_workflow_id, api_endpoint):
                 Domain Load:  {str(domain_load[1])} \n\
                 Job submission is paused until the system load decreases.\n\
                 ===========================================================\n"
-                logger.debug(msg1)
+                logger.info(msg1)
                 print(msg1)
 
             elif status_val in msg2_list:
@@ -433,7 +433,7 @@ def check_vantage_status(target_workflow_id, api_endpoint):
                 Active Job Count:  {str(job_queue[1])}\n\
                 Domain Load:   {str(domain_load[1])}\n\
                 "
-                logger.debug(msg2)
+                logger.info(msg2)
                 print(msg2)
 
             elif status_val in msg3_list:
@@ -445,7 +445,7 @@ def check_vantage_status(target_workflow_id, api_endpoint):
                 Domain Load:  {str(domain_load[1])}\n\
                 ===========================================================\n\
                 "
-                logger.debug(msg3)
+                logger.info(msg3)
                 print(msg3)
 
             else:
@@ -455,8 +455,8 @@ def check_vantage_status(target_workflow_id, api_endpoint):
             job_check_count += 1
 
         except Exception as excp:
-            vanstatus_excp_msg = f"Exeception raised on a Vantage Dominan Status check."
-            logger.debug(vanstatus_excp_msg)
+            vanstatus_excp_msg = f"Exception raised on a Vantage Dominan Status check."
+            logger.exception(vanstatus_excp_msg)
             print(vanstatus_excp_msg)
             print(str(excp))
 
@@ -519,8 +519,8 @@ def check_domain_load(job_check_count, api_endpoint):
             domain_load_val = 0
 
     except requests.exceptions.RequestException as excp:
-        domainck_excp_msg = f"Exeception raised on a Vantage Dominan Load check."
-        logger.debug(domainck_excp_msg)
+        domainck_excp_msg = f"Exception raised on a Vantage Dominan Load check."
+        logger.exception(domainck_excp_msg)
         print(domainck_excp_msg)
         print(str(excp))
 
@@ -557,8 +557,8 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
                 pass
 
         except requests.exceptions.RequestException as excp:
-            jobqueue_excp_msg = f"Exeception raised on a Vantage Job Queue check."
-            logger.debug(jobqueue_excp_msg)
+            jobqueue_excp_msg = f"Exception raised on a Vantage Job Queue check."
+            logger.exception(jobqueue_excp_msg)
             print(jobqueue_excp_msg)
             print(str(excp))
 
@@ -579,7 +579,7 @@ def api_endpoint_failover(api_endpoint):
                 Attempting to switch to a new API Endpoint now.\
                 =======================================================\
                 "
-                logger.debug(api_fail)
+                logger.info(api_fail)
                 print(api_fail)
 
                 new_api_endpoint = api_endpoint_list[0]
@@ -588,7 +588,7 @@ def api_endpoint_failover(api_endpoint):
 
                 api_new = f"\
                 Switching to new API Endpoint:  {api_endpoint}"
-                logger.debug(api_new)
+                logger.info(api_new)
                 print(api_new)
                 break
 
@@ -643,7 +643,7 @@ def jobs_complete(files_submitted, files_skipped):
     {str(files_skipped)} files were skipped. \n\
     ==================================================================\n\
     "
-    logger.debug(complete_msg)
+    logger.info(complete_msg)
     print(complete_msg)
 
 
@@ -701,7 +701,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
                 time.sleep(submit_frequency * 60)
 
                 sub_files_msg = f"Submitting Files {str(files_submitted + 1)} to {str(jobs_per_submit + files_submitted)} at {str(strftime('%H:%M:%S', localtime()))}"
-                logger.debug(sub_files_msg)
+                logger.info(sub_files_msg)
                 print(sub_files_msg)
 
             if file_match is not None:
@@ -723,8 +723,8 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
             if excp is IndexError:
                 break
             else:
-                apisubmit_excp_msg = f"Exeception raised on a Vantage API Submit."
-                logger.debug(apisubmit_excp_msg)
+                apisubmit_excp_msg = f"Exception raised on a Vantage API Submit."
+                logger.exception(apisubmit_excp_msg)
                 print(apisubmit_excp_msg)
                 print(str(excp))
                 break
@@ -758,12 +758,12 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
             job_post_response = job_post.json()
             job_id = job_post_response['JobIdentifier']
             job_id_msg = f"Submitting {file} | job id: {job_id}"
-            logger.debug(job_id_msg)
+            logger.info(job_id_msg)
             break
 
         except requests.exceptions.RequestException as excp:
-            jobsubmit_excp_msg = f"Exeception raised on a Vantage Job Submit."
-            logger.debug(jobsubmit_excp_msg)
+            jobsubmit_excp_msg = f"Exception raised on a Vantage Job Submit."
+            logger.exception(jobsubmit_excp_msg)
             print(jobsubmit_excp_msg)
             print(str(excp))
             api_endpoint = api_endpoint_failover(api_endpoint)
