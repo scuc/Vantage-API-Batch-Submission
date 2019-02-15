@@ -418,31 +418,31 @@ def check_vantage_status(target_workflow_id, api_endpoint):
 
             if status_val in msg1_list:
                 msg1 = f"\n\
-                ===========================================================\
-                {str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))}\
-                Active Job Count:  {str(job_queue[1])} \
-                Domain Load:  {str(domain_load[1])} \
-                Job submission is paused until the system load decreases.\
+                ===========================================================\n\
+                {str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))}\n\
+                Active Job Count:  {str(job_queue[1])} \n\
+                Domain Load:  {str(domain_load[1])} \n\
+                Job submission is paused until the system load decreases.\n\
                 ===========================================================\n"
                 logger.debug(msg1)
                 print(msg1)
 
             elif status_val in msg2_list:
-                msg2 =f"\n\
-                Job Check Count:  {str(job_check_count)}\
-                Active Job Count:  {str(job_queue[1])}\
-                Domain Load:   {str(domain_load[1])}\
+                msg2 =f"\
+                Job Check Count:  {str(job_check_count)}\n\
+                Active Job Count:  {str(job_queue[1])}\n\
+                Domain Load:   {str(domain_load[1])}\n\
                 "
                 logger.debug(msg2)
                 print(msg2)
 
             elif status_val in msg3_list:
                 msg3 =f"\n\
-                ===========================================================\
-                {str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))}\
-                ******* System Load - Status Update *******\
-                Active Job Count:  {str(job_queue[1])}\
-                Domain Load:  {str(domain_load[1])}\
+                ===========================================================\n\
+                {str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))}\n\
+                ******* System Load - Status Update *******\n\
+                Active Job Count:  {str(job_queue[1])}\n\
+                Domain Load:  {str(domain_load[1])}\n\
                 ===========================================================\n\
                 "
                 logger.debug(msg3)
@@ -543,11 +543,11 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
             active_jobs_json = get_job_status.json()
             active_job_count = len(active_jobs_json['Jobs'])
 
-            if active_job_count <= 50:
+            if active_job_count <= 3:
                 job_queue_val = 0
                 break
 
-            elif active_job_count >= 50:
+            elif active_job_count >= 3:
                 job_queue_val = 1
                 break
 
@@ -706,7 +706,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
 
             if file_match is not None:
                 file_submit_msg = f"Submitting: {file}"
-                logger.debug(file_submit_msg)
+                # logger.debug(file_submit_msg)
                 print(file_submit_msg)
                 api_endpoint = job_submit(target_workflow_id, source_dir, api_endpoint, file)
                 files_submitted += 1
@@ -750,14 +750,15 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
             else:
                 continue
 
-            job_post_msg = f"Posting job with values: {job_blob}"
-            logger.debug(job_post_msg)
+            # job_post_msg = f"Posting job with values: {job_blob}"
+            # logger.debug(job_post_msg)
 
             job_post = requests.post(root_uri + '/REST/Workflows/' + target_workflow_id + '/Submit',json=job_blob)
 
             job_post_response = job_post.json()
             job_id = job_post_response['JobIdentifier']
-            job_id_msg = f"Posted job with id: {job_id}"
+            job_id_msg = f"Submitting {file} | job id: {job_id}"
+            logger.debug(job_id_msg)
             break
 
         except requests.exceptions.RequestException as excp:
