@@ -1,37 +1,25 @@
 #!/usr/bin/env python3
 
-
+import logging
 import vantage_api_auto_submit as vn
 
-import logging
-# import logging.config
-import os
-import yaml
-
 from logging.handlers import TimedRotatingFileHandler
-from time import strftime
 
-
-def setup_logging():
+def vantage_main():
     """Setup logging configuration
     """
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     handler = TimedRotatingFileHandler(filename='vantage_api', when='midnight', encoding="utf8")
     handler.suffix = '_' + '%Y%m%d%H%M'+'.log'
-    formatter = logging.Formatter("%(asctime)s _%(levelname)s_ Module:%(module)s Function:%(funcName)s(), %(message)s")
+    formatter = logging.Formatter("%(asctime)s | %(levelname)s | Function: %(funcName)s() | Line %(lineno)s | %(message)s")
 
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-    return logger
-
-
-def vantage_main():
     '''set the variables for the script.'''
 
-    logger = setup_logging()
-    vn_Vars = vn.print_intro(logger)
+    vn_Vars = vn.print_intro()
 
     start_time = vn_Vars[0]
     total_duration = vn_Vars[1]
@@ -55,13 +43,11 @@ def vantage_main():
         Vantage Job ID :    {str(target_workflow_id)} \n \
     ===========================================================\n"
 
-    logger.debug(start_message)
-
     print(start_message)
 
     vn.countdown(start_time)
 
     vn.api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, api_endpoint, target_workflow_id)
 
-
-vantage_main()
+if __name__ == '__main__':
+    vantage_main()

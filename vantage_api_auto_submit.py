@@ -10,6 +10,7 @@ import time
 
 from datetime import datetime
 from itertools import product
+from logging.handlers import TimedRotatingFileHandler
 from operator import itemgetter
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from subprocess import call
@@ -38,7 +39,7 @@ def clear():
 # =================== BEGIN PROMPT FOR USER INPUT =================== #
 
 
-def print_intro(logger):
+def print_intro():
 
     print("=========================================================== " + "\n"
           + '''           Vantage Workflow Submission Script \n
@@ -70,7 +71,6 @@ def print_intro(logger):
                 print(year, month, day, hour, minute)
 
                 start_time = datetime(year, month, day, hour, minute)
-                logger.debug("testlog: " + str(start_time))
 
             if start_time < present:
                 print("Start Time must be a time in the future, try again.")
@@ -173,7 +173,7 @@ def print_intro(logger):
             print('\nError: Please verify that the Vantage SDK Service is started and reachable on {}.'.format(api_endpoint) + '\n\n' + 'Error Message: ' + str(err) + '\n\n')
 
     while True:
-        start_message = f"\
+        start_message = f"\n\
         ================================================================\n \
             Starting the Vantage workflow with these values : \n \
             Jobs will start on :   {str(start_time)} \n \
@@ -196,7 +196,7 @@ def print_intro(logger):
             break
         elif workflow_confirm.lower() in ('no', 'n'):
             clear()
-            print_intro(logger)
+            print_intro()
         else:
             print("{} is not a valid choice.".format(workflow_confirm))
             down_convert = down_convert = str(input("Please select Yes or No (Y/N): "))
@@ -213,7 +213,6 @@ def print_intro(logger):
 def platform_check():
     '''Get the OS of the server executing the code.'''
     os_platform = platform.system()
-    logger.debug("os platform detected: " + os_platform)
     return os_platform
 
 def api_endpoint_check(api_endpoint):
@@ -573,7 +572,7 @@ def api_endpoint_failover(api_endpoint):
             try:
                 api_fail = f"\
                 =======================================================\
-                {str(strftime("%A, %d %B %Y %I:%M%p", localtime()))} \
+                {str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))} \
                 Removing {api_endpoint} from the list of available api endpoints.\
                 Attempting to switch to a new API Endpoint now.\
                 =======================================================\
@@ -600,7 +599,7 @@ def api_endpoint_failover(api_endpoint):
                     print("Vantage cannot find an available api endpoint. Please check the Vantage SDK service on the Lighspeed servers is started and reachable.\n")
                     print("After confirming an available API Enpoint, please hit return to contine.")
                     continue
-        # print("\nRETURN NEW API ENDPOINT: " + api_endpoint + "\n")
+
         return api_endpoint
 
 
@@ -633,21 +632,39 @@ def check_job_state(files_submitted, jobs_per_submit):
 
 def jobs_complete(files_submitted, files_skipped):
     '''Print a summary message in the terminal window at the end of the batch run.'''
+
     complete_msg = f"\n\
-    ==================================================================\
-                           Jobs Complete!                      \
-    {str(strftime("%A, %d %B %Y %I:%M%p", localtime()))} \
-    {str(files_submitted - files_skipped)} files were submitted. \
-    {str(files_skipped)} files were skipped. \
-    ==================================================================\
+    ==================================================================\n\
+                           Jobs Complete!                      \n\
+    {str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))} \n\
+    {str(files_submitted - files_skipped)} files were submitted. \n\
+    {str(files_skipped)} files were skipped. \n\
+    ==================================================================\n\
     "
     logger.debug(complete_msg)
     print(complete_msg)
+
+
+def setup_logging():
+    """Setup logging configuration
+    """
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    handler = TimedRotatingFileHandler(filename='vantage_api', when='midnight', encoding="utf8")
+    handler.suffix = '_' + '%Y%m%d%H%M'+'.log'
+    formatter = logging.Formatter("%(asctime)s | %(levelname)s | Function: %(funcName)s() | Line %(lineno)s | %(message)s")
+
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+    return logger
 
 # ==================== API SUBMIT STARTS HERE ============================= #
 
 
 def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, api_endpoint, target_workflow_id):
+
+    logger = setup_logging()
 
     jobs_per_hour = (60 / submit_frequency) * jobs_per_submit
     total_jobs = jobs_per_hour * total_duration
@@ -666,15 +683,15 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
     else:
         pass
 
-    file_list = [x.name for x in p.glob('*.MOV') if x.is_file()]
+    file_list = [x.name for x in p.glob('*.mov') if x.is_file()]
     sorted_list = sorted(file_list)
 
     for files_submitted in range(int(total_jobs)):
         '''Submit batches of jobs at set intervals for the duration specified.'''
         try:
             file = sorted_list[list_number]
-            # file_match = re.match('TEST_'+ r'([0-9]{7})'+'.mov', file)
-            file_match = re.match(r'([0-9]{7})'+'.MOV', file)
+            file_match = re.match('TEST_'+ r'([0-9]{7})'+'.mov', file)
+            # file_match = re.match(r'([0-9]{7})'+'.mov', file)
 
 
             if files_submitted != 0 and files_submitted % jobs_per_submit == 0:
@@ -733,14 +750,14 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
             else:
                 continue
 
-            job_post_msg = f"posting job with values: {job_blob}"
+            job_post_msg = f"Posting job with values: {job_blob}"
             logger.debug(job_post_msg)
 
             job_post = requests.post(root_uri + '/REST/Workflows/' + target_workflow_id + '/Submit',json=job_blob)
 
             job_post_response = job_post.json()
             job_id = job_post_response['JobIdentifier']
-            job_id_msg = f"posted job with id: {job_id}"
+            job_id_msg = f"Posted job with id: {job_id}"
             break
 
         except requests.exceptions.RequestException as excp:
