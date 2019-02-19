@@ -27,8 +27,8 @@ api_endpoint_list = ['LIGHTSPEED1', 'LIGHTSPEED2', 'LIGHTSPEED3',
                     'FNDC-VANLSG6-08','FNDC-VANLSG6-09', 'FNDC-VANLSG6-10',
                     'FNDC-VANLSG6-11'
                     ]
-root_dir_win = 'T:\\\\'
-root_dir_posix = '/Volumes/Quantum2/'
+root_dir_win = 'Z:\\\\'
+root_dir_posix = '/Volumes/Quantum4/'
 
 logger = logging.getLogger(__name__)
 
@@ -428,7 +428,7 @@ def check_vantage_status(target_workflow_id, api_endpoint):
                 print(msg1)
 
             elif status_val in msg2_list:
-                msg2 =f"\
+                msg2 =f"\n\
                 Job Check Count:  {str(job_check_count)}\n\
                 Active Job Count:  {str(job_queue[1])}\n\
                 Domain Load:   {str(domain_load[1])}\n\
@@ -543,11 +543,11 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
             active_jobs_json = get_job_status.json()
             active_job_count = len(active_jobs_json['Jobs'])
 
-            if active_job_count <= 3:
+            if active_job_count <= 15:
                 job_queue_val = 0
                 break
 
-            elif active_job_count >= 3:
+            elif active_job_count >= 15:
                 job_queue_val = 1
                 break
 
@@ -572,7 +572,7 @@ def api_endpoint_failover(api_endpoint):
 
         while True:
             try:
-                api_fail = f"\
+                api_fail = f"\n\
                 =======================================================\
                 {str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))} \
                 Removing {api_endpoint} from the list of available api endpoints.\
@@ -691,7 +691,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
         '''Submit batches of jobs at set intervals for the duration specified.'''
         try:
             file = sorted_list[list_number]
-            file_match = re.match('TEST_'+ r'([0-9]{7})'+'.mov', file)
+            file_match = re.match(r'([0-9]{7})'+'.mov', file)
             # file_match = re.match(r'([0-9]{7})'+'.mov', file)
 
 
