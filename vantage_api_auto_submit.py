@@ -8,6 +8,8 @@ import re
 import requests
 import time
 
+import mongodb as db
+
 from datetime import datetime
 from itertools import product
 from logging.handlers import TimedRotatingFileHandler
@@ -43,14 +45,16 @@ def clear():
 
 def print_intro():
 
-    print("=========================================================== " + "\n"
-          + '''           Vantage Workflow Submission Script \n
-                Version 2.0, January 16, 2019\n
-    This script will use the Vantage REST API to submit files\n
-    to a workflow at set intervals. The user defines the \n
-    duration, frequency, and total number of jobs submitted.''' + "\n"
-    + "================================================================")
+    intro_banner = f"\n\
+    ===========================================================\n\
+               Vantage Workflow Submission Script \n\
+                Version 3.0, February 25, 2019\n\
+    This script will use the Vantage REST API to submit files\n\
+    to a workflow at set intervals. The user defines the \n\
+    duration, frequency, and total number of jobs submitted. \n\
+    ================================================================\n"
 
+    print(intro_banner)
 
     while True:
         st = str(input("Job Startime, 24hr Clock (YYYYMMDDhhmm or Year,Month,Day,hour,minute): "))
@@ -538,6 +542,8 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
             global root_uri
             root_uri = "http://" + str(api_endpoint) + ":8676/"
 
+            db.update_doc(root_uri, target_workflow_id)
+
             get_job_status = requests.get(root_uri + '/REST/Workflows/' + target_workflow_id + '/Jobs/?filter=Active')
 
             active_jobs_json = get_job_status.json()
@@ -759,6 +765,7 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
             job_id = job_post_response['JobIdentifier']
             job_id_msg = f"Submitting {file} | job id: {job_id}"
             logger.info(job_id_msg)
+            db.create_doc(job_post_response)
             break
 
         except requests.exceptions.RequestException as excp:
