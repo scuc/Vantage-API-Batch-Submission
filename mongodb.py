@@ -7,7 +7,7 @@ import requests
 
 from pymongo import MongoClient, InsertOne, DeleteOne, ReplaceOne
 
-client = pymongo.MongoClient("mongodb://localhost")
+client = pymongo.MongoClient("mongodb://localhost:27017")
 
 # job_info = {'Attachments': [],
 #  'JobName': '9469852.mov',
@@ -23,25 +23,28 @@ client = pymongo.MongoClient("mongodb://localhost")
 #  'Priority': 0,
 #  'Variables': []}
 
-def create_doc(job_info):
+def create_doc(document):
     db = client.vantage
     collection = db.dalet
 
     # pprint.pprint(job_info)
     # print()
 
-    job_name = job_info['JobName']
-    files = job_info['Medias'][0]['Files'][0]
-    identifier = job_info['Medias'][0]['Identifier']
+    # job_name = job_info['JobName']
+    # files = job_info['Files']
+    # identifier = job_info['Identifier']
 
-    document = {'JobName': job_name,'Fies': files, 'Identifier': identifier}
+    # document = {'JobName': job_info['JobName'],
+    #             'Fies': job_info['Files'],
+    #             'Identifier': job_info['Identifier']
+    #             }
 
     # pprint.pprint(document)
     # print(type(document))
 
     try:
         db.dalet.insert_one(document)
-        db.dalet.find_one()
+        # db.dalet.find_one()
     except Exception as e:
         print("Unexpected Error in create_doc():", type(e), e)
 

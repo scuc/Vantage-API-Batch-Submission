@@ -559,7 +559,6 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
 
             else:
                 job_queue_val = 0
-                # print("PASS JOB QUEUE VAL")
                 pass
 
         except requests.exceptions.RequestException as excp:
@@ -765,8 +764,11 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
             job_id = job_post_response['JobIdentifier']
             job_id_msg = f"Submitting {file} | job id: {job_id}"
             logger.info(job_id_msg)
-            job_info = job_blob
-            db.create_doc(job_info)
+            document = {"JobName":file,
+                        "Files": (source_dir + file),
+                        "JobIdentifier":job_id
+                        }
+            db.create_doc(document)
             break
 
         except requests.exceptions.RequestException as excp:
