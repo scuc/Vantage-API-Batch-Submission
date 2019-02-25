@@ -29,8 +29,8 @@ api_endpoint_list = ['LIGHTSPEED1', 'LIGHTSPEED2', 'LIGHTSPEED3',
                     'FNDC-VANLSG6-08','FNDC-VANLSG6-09', 'FNDC-VANLSG6-10',
                     'FNDC-VANLSG6-11'
                     ]
-root_dir_win = 'Z:\\\\'
-root_dir_posix = '/Volumes/Quantum4/'
+root_dir_win = 'T:\\\\'
+root_dir_posix = '/Volumes/Quantum2/'
 
 logger = logging.getLogger(__name__)
 
@@ -334,8 +334,10 @@ def path_validation(source_dir):
 
     if os_platform == 'Darwin':
         p = posix_path
+        print(p)
     else:
         p = str(windows_path)
+        print(p)
     if p is None or os.path.isdir(p) is not True:
         valid_path = False
     else:
@@ -549,11 +551,11 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
             active_jobs_json = get_job_status.json()
             active_job_count = len(active_jobs_json['Jobs'])
 
-            if active_job_count <= 15:
+            if active_job_count <= 3:
                 job_queue_val = 0
                 break
 
-            elif active_job_count >= 15:
+            elif active_job_count >= 3:
                 job_queue_val = 1
                 break
 
@@ -697,7 +699,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
         '''Submit batches of jobs at set intervals for the duration specified.'''
         try:
             file = sorted_list[list_number]
-            file_match = re.match(r'([0-9]{7})'+'.mov', file)
+            file_match = re.match('TEST_' + r([0-9]{7}) + '.mov', file)
             # file_match = re.match(r'([0-9]{7})'+'.mov', file)
 
 

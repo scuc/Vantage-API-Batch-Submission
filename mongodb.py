@@ -2,7 +2,7 @@
 import datetime
 import json
 import pprint
-# import pymongo
+import pymongo
 import requests
 
 from pymongo import MongoClient, InsertOne, DeleteOne, ReplaceOne
@@ -87,7 +87,7 @@ def update_doc(root_uri, target_workflow_id):
                 metrics_blob = metrics_get.json()
                 total_queue_time = metrics_blob['TotalQueueTimeInSeconds']
                 total_run_time = metrics_blob['TotalRunTimeInSeconds']
-                values = {"$set": {"metrics": ["TotalQueueTimeInSeconds": total_queue_time, 'TotalRunTimeInSeconds': total_run_time],"State": state, "Updated": updated}}
+                values = {"$set": {"metrics": [{"TotalQueueTimeInSeconds": total_queue_time, 'TotalRunTimeInSeconds': total_run_time}],"State": state, "Updated": updated}}
                 collection.update_one(query, values)
             else:
                 pass
