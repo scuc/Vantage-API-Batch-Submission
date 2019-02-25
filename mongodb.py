@@ -9,7 +9,7 @@ from pymongo import MongoClient, InsertOne, DeleteOne, ReplaceOne
 
 client = pymongo.MongoClient("mongodb://localhost")
 
-# job_input = {'Attachments': [],
+# job_info = {'Attachments': [],
 #  'JobName': '9469852.mov',
 #  'Labels': [],
 #  'Medias': [{'Data': 'If sending in-band data (eg: CML); place a UTF8 BASE64 '
@@ -23,17 +23,20 @@ client = pymongo.MongoClient("mongodb://localhost")
 #  'Priority': 0,
 #  'Variables': []}
 
-def create_doc(job_input):
+def create_doc(job_info):
     db = client.vantage
     collection = db.dalet
 
-    job_name = job_input['JobName']
-    files = job_input['Medias'][0]['Files'][0]
-    identifier = job_input['Medias'][0]['Identifier']
+    # pprint.pprint(job_info)
+    # print()
+
+    job_name = job_info['JobName']
+    files = job_info['Medias'][0]['Files'][0]
+    identifier = job_info['Medias'][0]['Identifier']
 
     document = {'JobName': job_name,'Fies': files, 'Identifier': identifier}
 
-    pprint.pprint(document)
+    # pprint.pprint(document)
     # print(type(document))
 
     try:
@@ -61,9 +64,9 @@ def update_doc(root_uri, target_workflow_id):
         state = job['State']
         updated = job['Updated']
 
-        print(" ")
-        pprint.pprint(job)
-        print(" ")
+        # print(" ")
+        # pprint.pprint(job)
+        # print(" ")
 
         try:
             count = collection.count_documents({"Identifier": identifier})

@@ -334,10 +334,8 @@ def path_validation(source_dir):
 
     if os_platform == 'Darwin':
         p = posix_path
-        print(p)
     else:
         p = str(windows_path)
-        print(p)
     if p is None or os.path.isdir(p) is not True:
         valid_path = False
     else:
@@ -699,7 +697,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
         '''Submit batches of jobs at set intervals for the duration specified.'''
         try:
             file = sorted_list[list_number]
-            file_match = re.match('TEST_' + r([0-9]{7}) + '.mov', file)
+            file_match = re.match('TEST_' + r'([0-9]{7})' + '.mov', file)
             # file_match = re.match(r'([0-9]{7})'+'.mov', file)
 
 
@@ -767,7 +765,8 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
             job_id = job_post_response['JobIdentifier']
             job_id_msg = f"Submitting {file} | job id: {job_id}"
             logger.info(job_id_msg)
-            db.create_doc(job_post_response)
+            job_info = job_blob
+            db.create_doc(job_info)
             break
 
         except requests.exceptions.RequestException as excp:
