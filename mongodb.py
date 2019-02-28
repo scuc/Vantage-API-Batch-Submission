@@ -17,14 +17,8 @@ def create_doc(job_id, api_endpoint):
     document_get = requests.get('http://' + str(api_endpoint) + ':8676/REST/Jobs/' + job_id)
 
     document = document_get.json()
-
     document = document["Job"]
-
-    print("DOCUMENT1: " + str(document))
-
     document = set_values(document)
-
-    print("DOCUMENT3: " + str(document))
 
     try:
         collection.insert_one(document)
@@ -34,8 +28,6 @@ def create_doc(job_id, api_endpoint):
     return document
 
 def set_values(job):
-
-    print("DOCUMENT2: " + str(job))
 
     state = job['State']
     started = job['Started']
@@ -72,7 +64,6 @@ def update_db(api_endpoint, target_workflow_id):
     collection = db.dalet
 
     doc_count = collection.count_documents({})
-    print("DOC_COUNT: " + str(doc_count))
 
     if doc_count is not 0:
 
@@ -88,11 +79,6 @@ def update_db(api_endpoint, target_workflow_id):
 
         for job in job_json['Jobs']:
             job = set_values(job)
-            print("DOCUMENT4: " + str(job))
-
-            print("")
-            pprint.pprint(job)
-            print("")
 
             identifier = job['Identifier']
             ismonitor = job['IsMonitor']
@@ -100,13 +86,6 @@ def update_db(api_endpoint, target_workflow_id):
             started = job['Started']
             state = job['State']
             updated = job['Updated']
-
-            print(identifier)
-            print(ismonitor)
-            print(name)
-            print(started)
-            print(state)
-            print(updated)
 
             try:
                 count = collection.count_documents({"Identifier": identifier})
@@ -127,7 +106,14 @@ def update_db(api_endpoint, target_workflow_id):
                     values = {"$set": {"ErrorMessage": error_msg}}
                     collection.update_one(query, values)
 
-                if state in [5,6,7,8]:
+                if state == 5:
+                    output_get = requests.get('http://' + str(api_endpoint) + ':8676/REST/Jobs/' + identifier + '/Outputs')
+                    output_dict = output_get.json()
+                    output_msg = output_dict['Medias'][0]['Files']
+                    values = {"$set": {"OutputFiles": output_msg}}
+                    collection.update_one(query, values)
+
+                if state in [6,7,8]:
                     metrics_get = requests.get('http://' + str(api_endpoint) + ':8676/REST/Jobs/' + identifier + '/Metrics')
                     metrics_blob = metrics_get.json()
                     total_queue_time = metrics_blob['TotalQueueTimeInSeconds']
@@ -146,14 +132,12 @@ def update_db(api_endpoint, target_workflow_id):
 # update_db("lightspeed1","31441afe-a641-48b8-a34c-40bdb2b03672/")
 
 '''
-{'Identifier': '0566d9d0-515f-4590-b3be-a718e5c9f530',
-'IsMonitor': False,
-'Name': '8228266.mov',
-'Started': '/Date(1549019142830-0500)/',
-'State': 5,
-'Updated': '/Date(1549019770647-0500)/'}]}
+=======================================================================
+                JOB VALUE INFORMATION
+=======================================================================
+'''
 
-
+'''
 Identifier = Guid  The unique identifier for the job.
 
 IsMonitor =
@@ -165,7 +149,8 @@ State = JobState The current state of the job (see below)
 Updated DateTime = The timestamp of when the job was last updated.
 '''
 
-'''Job State Value Meaning
+'''
+Job State Value Meaning
 
 0 = In Process - The job is currently active and in-process (it contains actions which are currently being processed).
 
@@ -180,17 +165,26 @@ Updated DateTime = The timestamp of when the job was last updated.
 8 = Waiting to Retry
 The job has entered a state where the remaining actions are waiting to be retried. This is typically the result of a Retry rules being applied to one or more actions in a job (eg: retry an FTP transfer after 10 minutes if the target site is not accessible).'''
 
+'''
+{'Identifier': '0566d9d0-515f-4590-b3be-a718e5c9f530',
+'IsMonitor': False,
+'Name': '8228266.mov',
+'Started': '/Date(1549019142830-0500)/',
+'State': 5,
+'Updated': '/Date(1549019770647-0500)/'}]}
 
-# job_info = {'Attachments': [],
-#  'JobName': '9469852.mov',
-#  'Labels': [],
-#  'Medias': [{'Data': 'If sending in-band data (eg: CML); place a UTF8 BASE64 '
-#                      'encoded version of the data in this field and do not '
-#                      'send a file path.',
-#              'Description': 'The original version of content encountered or '
-#                             'created by Vantage.',
-#              'Files': ['Z://ProxyFiles/renamed_PROD_PROXY_MOV/9469852.mov'],
-#              'Identifier': '3c73367b-059c-45aa-ad7a-72a84ae40921',
-#              'Name': 'Original'}],
-#  'Priority': 0,
-#  'Variables': []}
+
+job_info = {'Attachments': [],
+ 'JobName': '9469852.mov',
+ 'Labels': [],
+ 'Medias': [{'Data': 'If sending in-band data (eg: CML); place a UTF8 BASE64 '
+                     'encoded version of the data in this field and do not '
+                     'send a file path.',
+             'Description': 'The original version of content encountered or '
+                            'created by Vantage.',
+             'Files': ['Z://ProxyFiles/renamed_PROD_PROXY_MOV/9469852.mov'],
+             'Identifier': '3c73367b-059c-45aa-ad7a-72a84ae40921',
+             'Name': 'Original'}],
+ 'Priority': 0,
+ 'Variables': []}
+'''

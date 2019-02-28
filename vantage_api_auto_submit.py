@@ -764,8 +764,6 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
 
             job_post_response = job_post.json()
 
-            print("JPR : " + str(job_post_response))
-
             job_id = job_post_response['JobIdentifier']
             job_id_msg = f"Submitting {file} | job id: {job_id}"
             logger.info(job_id_msg)
@@ -778,14 +776,6 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
             logger.info("Job values submitted to db: " + document_msg)
 
             break
-
-            # document_get = requests.get(root_uri + '/REST/Jobs/' + job_id)
-            # document = document_get.json()
-            # document_msg = f"{document}"
-            # print("DOCUMENT: " + str(document))
-            # db.create_doc(document)
-            # logger.info("Job values submitted to db: " + document_msg)
-
 
         except requests.exceptions.RequestException as excp:
             jobsubmit_excp_msg = f"Exception raised on a Vantage Job Submit."
