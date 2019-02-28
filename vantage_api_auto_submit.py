@@ -4,6 +4,7 @@ import inspect
 import logging
 import os
 import platform
+import pprint
 import re
 import requests
 import time
@@ -389,13 +390,20 @@ def check_vantage_status(target_workflow_id, api_endpoint):
     global job_check_count
     job_check_count = 0
 
-
     while True:
 
         try:
             api_endpoint = api_endpoint_check(api_endpoint)
             domain_load = check_domain_load(job_check_count, api_endpoint)
             job_queue = check_job_queue(target_workflow_id, api_endpoint, job_check_count)
+
+            print("API_ENDPOINT: " + api_endpoint)
+
+            db.update_db(api_endpoint, target_workflow_id)
+
+            print("")
+            print("DB UPDATED")
+            print("")
 
             if job_check_count == 0:
                 job_count_val = 0
@@ -541,8 +549,6 @@ def check_job_queue(target_workflow_id, api_endpoint, job_check_count):
             api_endpoint = api_endpoint_check(api_endpoint)
             global root_uri
             root_uri = "http://" + str(api_endpoint) + ":8676/"
-
-            db.update_doc(root_uri, target_workflow_id)
 
             get_job_status = requests.get(root_uri + '/REST/Workflows/' + target_workflow_id + '/Jobs/?filter=Active')
 
@@ -711,9 +717,8 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
 
             if file_match is not None:
                 file_submit_msg = f"Submitting: {file}"
-                # logger.debug(file_submit_msg)
                 print(file_submit_msg)
-                api_endpoint = job_submit(target_workflow_id, source_dir, api_endpoint, file)
+                job_submit(target_workflow_id, source_dir, api_endpoint, file)
                 files_submitted += 1
                 list_number += 1
             else:
@@ -749,27 +754,38 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
         try:
             job_get = requests.get(root_uri + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
             if job_get is not None:
-                    job_blob = job_get.json()
-                    job_blob['JobName'] = file
-                    job_blob['Medias'][0]['Files'][0] = source_dir + file
+                    job_dict = job_get.json()
+                    job_dict['JobName'] = file
+                    job_dict['Medias'][0]['Files'][0] = source_dir + file
             else:
                 continue
 
-            # job_post_msg = f"Posting job with values: {job_blob}"
-            # logger.debug(job_post_msg)
-
-            job_post = requests.post(root_uri + '/REST/Workflows/' + target_workflow_id + '/Submit',json=job_blob)
+            job_post = requests.post(root_uri + '/REST/Workflows/' + target_workflow_id + '/Submit',json=job_dict)
 
             job_post_response = job_post.json()
+
+            print("JPR : " + str(job_post_response))
+
             job_id = job_post_response['JobIdentifier']
             job_id_msg = f"Submitting {file} | job id: {job_id}"
             logger.info(job_id_msg)
-            document = {"JobName":file,
-                        "Files": (source_dir + file),
-                        "JobIdentifier":job_id
-                        }
-            db.create_doc(document)
+
+            # sleep gives Vantage job time to set values.
+            time.sleep(1)
+            document = db.create_doc(job_id, api_endpoint)
+
+            document_msg = f"{document}"
+            logger.info("Job values submitted to db: " + document_msg)
+
             break
+
+            # document_get = requests.get(root_uri + '/REST/Jobs/' + job_id)
+            # document = document_get.json()
+            # document_msg = f"{document}"
+            # print("DOCUMENT: " + str(document))
+            # db.create_doc(document)
+            # logger.info("Job values submitted to db: " + document_msg)
+
 
         except requests.exceptions.RequestException as excp:
             jobsubmit_excp_msg = f"Exception raised on a Vantage Job Submit."

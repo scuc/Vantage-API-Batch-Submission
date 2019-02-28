@@ -1,108 +1,152 @@
 
-import datetime
 import json
 import pprint
 import pymongo
 import requests
 
+from datetime import datetime
 from pymongo import MongoClient, InsertOne, DeleteOne, ReplaceOne
 
 client = pymongo.MongoClient("mongodb://localhost:27017")
 
-# job_info = {'Attachments': [],
-#  'JobName': '9469852.mov',
-#  'Labels': [],
-#  'Medias': [{'Data': 'If sending in-band data (eg: CML); place a UTF8 BASE64 '
-#                      'encoded version of the data in this field and do not '
-#                      'send a file path.',
-#              'Description': 'The original version of content encountered or '
-#                             'created by Vantage.',
-#              'Files': ['Z://ProxyFiles/renamed_PROD_PROXY_MOV/9469852.mov'],
-#              'Identifier': '3c73367b-059c-45aa-ad7a-72a84ae40921',
-#              'Name': 'Original'}],
-#  'Priority': 0,
-#  'Variables': []}
+def create_doc(job_id, api_endpoint):
 
-def create_doc(document):
     db = client.vantage
     collection = db.dalet
 
-    # pprint.pprint(job_info)
-    # print()
+    document_get = requests.get('http://' + str(api_endpoint) + ':8676/REST/Jobs/' + job_id)
 
-    # job_name = job_info['JobName']
-    # files = job_info['Files']
-    # identifier = job_info['Identifier']
+    document = document_get.json()
 
-    # document = {'JobName': job_info['JobName'],
-    #             'Fies': job_info['Files'],
-    #             'Identifier': job_info['Identifier']
-    #             }
+    document = document["Job"]
 
-    # pprint.pprint(document)
-    # print(type(document))
+    print("DOCUMENT1: " + str(document))
+
+    document = set_values(document)
+
+    print("DOCUMENT3: " + str(document))
 
     try:
-        db.dalet.insert_one(document)
-        # db.dalet.find_one()
+        collection.insert_one(document)
     except Exception as e:
         print("Unexpected Error in create_doc():", type(e), e)
 
-def update_doc(root_uri, target_workflow_id):
+    return document
+
+def set_values(job):
+
+    print("DOCUMENT2: " + str(job))
+
+    state = job['State']
+    started = job['Started']
+    updated = job['Updated']
+
+    if state is 0:
+        state = "In Process"
+    if state is 4:
+        state = "Failed"
+    if state is 5:
+        state = "Complete"
+    if state is 6:
+        state = "Waiting"
+    if state is 7:
+        state = "Stopped by User"
+    if state is 8:
+        state = "Waiting to Retry"
+
+    started_slice = started[6:19]
+    timestamp = (int(started_slice)/1000)
+    started_dt = str((datetime.utcfromtimestamp(timestamp)))
+    job['Started'] = started_dt
+
+    updated_slice = updated[6:19]
+    timestamp = (int(updated_slice)/1000)
+    updated_dt = str((datetime.utcfromtimestamp(timestamp)))
+    job['Updated'] = updated_dt
+
+    return job
+
+def update_db(api_endpoint, target_workflow_id):
 
     db = client.vantage
     collection = db.dalet
 
-    job_get = requests.get(root_uri + '/REST/Workflows/' + target_workflow_id + '/Jobs/?filter={All}')
+    doc_count = collection.count_documents({})
+    print("DOC_COUNT: " + str(doc_count))
 
-    job_blob = job_get.json()
+    if doc_count is not 0:
 
-    for job in job_blob['Jobs']:
-        job = dict(job)
+        job_get = requests.get('http://' + str(api_endpoint) + ':8676/REST/Workflows/' + target_workflow_id + '/Jobs/?filter={All}')
 
-        identifier = job['Identifier']
-        ismonitor = job['IsMonitor']
-        name = job['Name']
-        started = job['Started']
-        state = job['State']
-        updated = job['Updated']
+        # with open('joblist.json') as json_data:
+        #     d = json.load(json_data)
 
-        # print(" ")
-        # pprint.pprint(job)
-        # print(" ")
+        job_json = job_get.json()
 
-        try:
-            count = collection.count_documents({"Identifier": identifier})
+        print("GET ALL JOBS")
+        pprint.pprint(job_json)
 
-            query = {"Identifier": identifier}
-            values = {"$set": {"State": state},
-                    "Updated": updated}
+        for job in job_json['Jobs']:
+            job = set_values(job)
+            print("DOCUMENT4: " + str(job))
 
-            if count is not 0:
-                collection.update_one(query, values)
+            print("")
+            pprint.pprint(job)
+            print("")
 
-            if state == 4:
-                error_get = requests.get(root_uri + '/REST/Jobs/' + identifier + '/ErrorMessage')
-                error_blob = error_get.json()
-                error_msg = error_blob['JobErrorMessage']
-                values = {"$set": {"ErrorMessage": error_msg}}
-                collection.update_one(query, values)
+            identifier = job['Identifier']
+            ismonitor = job['IsMonitor']
+            name = job['Name']
+            started = job['Started']
+            state = job['State']
+            updated = job['Updated']
 
-            if state in [5,6,7,8]:
-                metrics_get = requests.get(root_uri + '/REST/Jobs/' + identifier + '/Metrics')
-                metrics_blob = metrics_get.json()
-                total_queue_time = metrics_blob['TotalQueueTimeInSeconds']
-                total_run_time = metrics_blob['TotalRunTimeInSeconds']
-                values = {"$set": {"metrics": [{"TotalQueueTimeInSeconds": total_queue_time, 'TotalRunTimeInSeconds': total_run_time}],"State": state, "Updated": updated}}
-                collection.update_one(query, values)
-            else:
-                pass
-        except Exception as err:
-            print("Unexpected Error in update_doc:", type(e), e)
+            print(identifier)
+            print(ismonitor)
+            print(name)
+            print(started)
+            print(state)
+            print(updated)
 
+            try:
+                count = collection.count_documents({"Identifier": identifier})
+
+                query = {"Identifier": identifier}
+                values = {"$set": {"State": state, "Updated": updated}}
+
+                if count is not 0:
+                    collection.update_one(query, values)
+                    print('updating now')
+                else:
+                    create_doc(job['Identifier'], api_endpoint)
+
+                if state == 4:
+                    error_get = requests.get('http://' + str(api_endpoint) + ':8676/REST/Jobs/' + identifier + '/ErrorMessage')
+                    error_dict = error_get.json()
+                    error_msg = error_dict['JobErrorMessage']
+                    values = {"$set": {"ErrorMessage": error_msg}}
+                    collection.update_one(query, values)
+
+                if state in [5,6,7,8]:
+                    metrics_get = requests.get('http://' + str(api_endpoint) + ':8676/REST/Jobs/' + identifier + '/Metrics')
+                    metrics_blob = metrics_get.json()
+                    total_queue_time = metrics_blob['TotalQueueTimeInSeconds']
+                    total_run_time = metrics_blob['TotalRunTimeInSeconds']
+                    values = {"$set": {"metrics": [{"TotalQueueTimeInSeconds": total_queue_time, 'TotalRunTimeInSeconds': total_run_time}],"State": state, "Updated": updated}}
+                    collection.update_one(query, values)
+                else:
+                    pass
+            except Exception as err:
+                print("Unexpected Error in update_db:", type(err), err)
+            break
+        else:
+            pass
+    return
+
+# update_db("lightspeed1","31441afe-a641-48b8-a34c-40bdb2b03672/")
 
 '''
-{'Identifier': '984cf6a0-83e9-4373-af6e-fff135468d4c',
+{'Identifier': '0566d9d0-515f-4590-b3be-a718e5c9f530',
 'IsMonitor': False,
 'Name': '8228266.mov',
 'Started': '/Date(1549019142830-0500)/',
@@ -110,19 +154,15 @@ def update_doc(root_uri, target_workflow_id):
 'Updated': '/Date(1549019770647-0500)/'}]}
 
 
-Identifier
-        Guid  The unique identifier for the job.
+Identifier = Guid  The unique identifier for the job.
 
-IsMonitor
+IsMonitor =
         Boolean  A Boolean value which indicates whether the job corresponds to a Monitor type transaction (i.e.: a Supervisor task which is ultimately responsible for the creation of other jobs). A value of true indicates this is a Monitor job, while a value of false implies that the job in question is a more traditional (normal) Vantage job.
-Name
-    String  The job name (the name which appears in the Vantage Workflow Designer)
-Started
-        DateTime The timestamp of when the job was created.
-State
-        JobState The current state of the job (see below)
-Updated DateTime
-        The timestamp of when the job was last updated.
+Name = String  The job name
+       (the name which appears in the Vantage Workflow Designer)
+Started = DateTime The timestamp of when the job was created.
+State = JobState The current state of the job (see below)
+Updated DateTime = The timestamp of when the job was last updated.
 '''
 
 '''Job State Value Meaning
@@ -139,3 +179,18 @@ Updated DateTime
 
 8 = Waiting to Retry
 The job has entered a state where the remaining actions are waiting to be retried. This is typically the result of a Retry rules being applied to one or more actions in a job (eg: retry an FTP transfer after 10 minutes if the target site is not accessible).'''
+
+
+# job_info = {'Attachments': [],
+#  'JobName': '9469852.mov',
+#  'Labels': [],
+#  'Medias': [{'Data': 'If sending in-band data (eg: CML); place a UTF8 BASE64 '
+#                      'encoded version of the data in this field and do not '
+#                      'send a file path.',
+#              'Description': 'The original version of content encountered or '
+#                             'created by Vantage.',
+#              'Files': ['Z://ProxyFiles/renamed_PROD_PROXY_MOV/9469852.mov'],
+#              'Identifier': '3c73367b-059c-45aa-ad7a-72a84ae40921',
+#              'Name': 'Original'}],
+#  'Priority': 0,
+#  'Variables': []}
