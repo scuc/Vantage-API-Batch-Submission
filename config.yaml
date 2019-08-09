@@ -1,0 +1,18 @@
+
+
+
+paths: 
+  root_dir_win: T:\\\\
+  root_dir_posix: /Volumes/Quantum2/
+
+
+endpoint_list: 
+    - LIGHTSPEED1
+    - LIGHTSPEED2
+    - LIGHTSPEED3
+    - LIGHTSPEED4
+    - LIGHTSPEED5
+    - LIGHTSPEED6
+    - LIGHTSPEED7
+
+
