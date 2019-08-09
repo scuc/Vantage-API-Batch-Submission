@@ -18,6 +18,8 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from subprocess import call
 from time import localtime, strftime
 
+import system_checks as sysch
+
 
 api_endpoint_list = ['LIGHTSPEED1', 'LIGHTSPEED2', 'LIGHTSPEED3',
                     'LIGHTSPEED4','LIGHTSPEED5', 'LIGHTSPEED6', 'LIGHTSPEED7',
@@ -33,6 +35,27 @@ logger = logging.getLogger(__name__)
 def clear():
     '''check and make call for specific operating system'''
     _ = call('clear' if os.name =='posix' else 'cls')
+
+
+def countdown(start_time):
+    '''Create a visible countdownin the terminal window based on the start time of the user input.'''
+    present = datetime.now()
+    td = start_time - present
+    tds = td.total_seconds()
+
+    while tds > 0:
+        mins, secs = divmod(tds, 60)
+        hours, mins = divmod(mins, 60)
+        timeformat = '{:02d}:{:02d}:{:02d}'.format(int(hours), int(mins), int(secs))
+        print("Job Sumission Starts In: " + str(timeformat), end='\r')
+        time.sleep(1)
+        tds -= 1
+    time.sleep(1)
+    clear()
+    print("")
+    print("\n================ Starting Now =================\n")
+    print("========= "+ str(strftime("%A, %d %B %Y %I:%M%p", localtime())) + " ==========\n")
+    return
 
 
 # ==================== API SUBMIT STARTS HERE ============================= #
