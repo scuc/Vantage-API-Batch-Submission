@@ -5,6 +5,7 @@ import logging.config
 import os
 import yaml
 
+import get_user_input as gui
 import vantage_api_auto_submit as vn
 
 
@@ -25,16 +26,16 @@ def vantage_main():
 
     set_logger()
 
-    vn_Vars = vn.print_intro()
+    gui_Vars = gui.print_intro()
 
-    start_time = vn_Vars[0]
-    total_duration = vn_Vars[1]
-    submit_frequency = vn_Vars[2]
-    jobs_per_submit = vn_Vars[3]
-    sources_in_rotation = vn_Vars[4]
-    source_dir = vn_Vars[5]
-    api_endpoint = vn_Vars[6]
-    target_workflow_id = vn_Vars[7]
+    start_time = gui_Vars[0]
+    total_duration = gui_Vars[1]
+    submit_frequency = gui_Vars[2]
+    jobs_per_submit = gui_Vars[3]
+    sources_in_rotation = gui_Vars[4]
+    source_dir = gui_Vars[5]
+    api_endpoint = gui_Vars[6]
+    target_workflow_id = gui_Vars[7]
 
     start_message = f"\
     ================================================================\n \
@@ -51,7 +52,7 @@ def vantage_main():
 
     print(start_message)
 
-    vn.countdown(start_time)
+    gui.countdown(start_time)
 
     vn.api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, api_endpoint, target_workflow_id)
 
