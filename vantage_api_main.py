@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
 
 import logging
+import logging.config
+import os
+import yaml
+
 import vantage_api_auto_submit as vn
 
-from logging.handlers import TimedRotatingFileHandler
 
 def set_logger():
     """Setup logging configuration
     """
-    logger = logging.getLogger("vantage_api_auto_submit")
-    logger.setLevel(logging.DEBUG)
-    handler = TimedRotatingFileHandler(filename='vantage_jobs', when='midnight', encoding="utf8")
-    handler.suffix = '_' + '%Y%m%d%H%M'+'.log'
-    formatter = logging.Formatter("%(asctime)s | %(levelname)s | Function: %(funcName)s() | Line %(lineno)s | %(message)s")
+    path = 'logging.yaml'
 
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    with open(path, 'rt') as f:
+        config = yaml.safe_load(f.read())
+        logger = logging.config.dictConfig(config)
 
     return logger
+
 
 def vantage_main():
     '''set the variables for the script.'''
@@ -54,6 +55,6 @@ def vantage_main():
 
     vn.api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, api_endpoint, target_workflow_id)
 
-# if __name__ == '__main__':
-#     vantage_main()
-vantage_main()
+if __name__ == '__main__':
+    set_logger()
+    vantage_main()
