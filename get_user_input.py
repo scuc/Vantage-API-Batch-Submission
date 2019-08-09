@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from time import localtime, strftime
 
+import system_checks as sysch
 
 # =================== BEGIN CONSOLE PROMPT FOR USER INPUT =================== #
 
@@ -189,74 +190,10 @@ def print_intro():
 
 # ========================= USER INPUT VALIDATION =========================== #
 
-
 def platform_check():
     '''Get the OS of the server executing the code.'''
     os_platform = platform.system()
     return os_platform
-
-def api_endpoint_check(api_endpoint):
-    '''check the online status of an api endpoint'''
-    root_uri = 'http://'+ api_endpoint + ':8676'
-
-    try:
-        source_frame = inspect.stack()[1]
-        frame,filename,line_number,function_name,lines,index = source_frame
-        source_func = source_frame[3]
-
-        if source_func == 'print_intro':
-            try:
-                domain_check = requests.get(root_uri + '/REST/Domain/Online')
-                domain_check_rsp = domain_check.json()
-                api_endpoint_status = domain_check_rsp['Online']
-
-                if api_endpoint_status is not True:
-                    api_endpoint_status = "\n\n{} is not active or unreachable, please check the Vantage SDK service on the host and try again.".format(api_endpoint.upper()) + "\n\n" + str(err) + "\n\n"
-                else:
-                    pass
-
-            except requests.exceptions.RequestException as excp:
-                excp_msg1 = f"Exception raised on API endpoint check."
-                logger.exception(excp_msg1)
-                api_endpoint_status = str(excp)
-                print("Exception Message #1:" + eexcp_msg1)
-                print(api_endpoint_status)
-
-
-            return api_endpoint_status
-
-
-        elif source_func in ['check_vantage_status', 'check_domain_load', 'check_job_queue', 'api_submit', 'job_submit']:
-
-            try:
-                domain_check = requests.get(root_uri + '/REST/Domain/Online')
-                domain_check_rsp = domain_check.json()
-                api_endpoint_status = domain_check_rsp['Online']
-
-                if api_endpoint_status == True:
-                    return api_endpoint
-
-                else:
-                    api_endpoint = api_endpoint_failover(api_endpoint)
-
-            except requests.exceptions.RequestException as excp:
-                excp_msg2 = f"Exception raised on API endpoint check."
-                logger.exception(excp_msg2)
-                api_endpoint_status = str(excp)
-                print(excp_msg2)
-                print("Exception Message #2:" + eapi_endpoint_status)
-                api_endpoint = api_endpoint_failover(api_endpoint)
-                return api_endpoint
-
-        else:
-            api_endpoint = api_endpoint_failover(api_endpoint)
-
-    except Exception as excp:
-        excp_msg3 = f"Exception raised on API endpoint check."
-        logger.exception(excp_msg3)
-        api_endpoint_status = str(excp)
-        print("Exception Message #3:" + excp_msg3)
-        print(api_endpoint_status)
 
 
 def clean_datetimes(date_str):
@@ -318,22 +255,4 @@ def path_validation(source_dir):
     return valid_path
 
 
-def countdown(start_time):
-    '''Create a visible countdownin the terminal window based on the start time of the user input.'''
-    present = datetime.now()
-    td = start_time - present
-    tds = td.total_seconds()
 
-    while tds > 0:
-        mins, secs = divmod(tds, 60)
-        hours, mins = divmod(mins, 60)
-        timeformat = '{:02d}:{:02d}:{:02d}'.format(int(hours), int(mins), int(secs))
-        print("Job Sumission Starts In: " + str(timeformat), end='\r')
-        time.sleep(1)
-        tds -= 1
-    time.sleep(1)
-    clear()
-    print("")
-    print("\n================ Starting Now =================\n")
-    print("========= "+ str(strftime("%A, %d %B %Y %I:%M%p", localtime())) + " ==========\n")
-    return
