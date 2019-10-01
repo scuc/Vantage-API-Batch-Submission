@@ -8,6 +8,8 @@ import yaml
 import get_user_input as gui
 import api_auto_submit as api
 
+logger = logging.getLogger(__name__)
+
 
 def set_logger():
     """Setup logging configuration
@@ -26,7 +28,7 @@ def vantage_main():
 
     set_logger()
 
-    gui_Vars = gui.print_intro()
+    gui_Vars = gui.
 
     start_time = gui_Vars[0]
     total_duration = gui_Vars[1]
