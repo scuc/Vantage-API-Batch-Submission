@@ -7,7 +7,10 @@ import requests
 from datetime import datetime
 from pymongo import MongoClient, InsertOne, DeleteOne, ReplaceOne
 
+logger = logging.getLogger(__name__)
+
 client = pymongo.MongoClient("mongodb://localhost:27017")
+
 
 def create_doc(job_id, api_endpoint):
 
@@ -26,6 +29,7 @@ def create_doc(job_id, api_endpoint):
         print("Unexpected Error in create_doc():", type(e), e)
 
     return document
+
 
 def set_values(job):
 
@@ -57,6 +61,7 @@ def set_values(job):
     job['Updated'] = updated_dt
 
     return job
+
 
 def update_db(api_endpoint, target_workflow_id):
 
