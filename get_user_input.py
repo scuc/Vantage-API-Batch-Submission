@@ -12,10 +12,13 @@ from time import localtime, strftime
 
 import system_checks as sysch
 
+logger = logging.getLogger(__name__)
+
+
 # =================== BEGIN CONSOLE PROMPT FOR USER INPUT =================== #
 
 
-def print_intro():
+def intro():
     """
     CONSOLE PROMPT FOR USER INPUT
     """
@@ -177,7 +180,7 @@ def print_intro():
             break
         elif workflow_confirm.lower() in ('no', 'n'):
             clear()
-            print_intro()
+            
         else:
             print("{} is not a valid choice.".format(workflow_confirm))
             down_convert = down_convert = str(input("Please select Yes or No (Y/N): "))
@@ -255,4 +258,5 @@ def path_validation(source_dir):
     return valid_path
 
 
-
+if __name__ == '__main__':
+    
