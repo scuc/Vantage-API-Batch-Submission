@@ -1,11 +1,19 @@
+#!/usr/bin/env python3
 
 import logging
 import requests
+
+import config as cfg
 
 from operator import itemgetter
 from time import localtime, strftime
 
 logger = logging.getLogger(__name__)
+
+config = cfg.get_config()
+
+api_endpoint_list = config['endpoint_list']
+
 
 # ===================== DOMAIN AND API ENPOINT CHECKS ======================= #
 
@@ -260,8 +268,31 @@ def jobs_complete(files_submitted, files_skipped):
     print(complete_msg)
 
 
-def api_endpoint_check(api_endpoint):
+# ===================== API ENPOINTS CHECKS ======================= #
+
+
+def get_endpoint():
+    """
+    Select an api endpoint from the list of available Vantage servers.
+    """
+    for endpoint in api_endpoint_list: 
+        try: 
+            print(endpoint)
+            api_endpoint_status = api_endpoint_check(endpoint)
+            if api_endpoint_status != True: 
+                continue
+            else:
+                api_endpoint = endpoint
+                return endpoint
+        except Exception as e:
+            get_ep_exception_msg = f"Unable to reach any availble Vantage Endpoints."
+            logger.error(get_ep_exception_msg)
+
+
+
+def api_endpoint_check(endpoint):
     '''check the online status of an api endpoint'''
+
     root_uri = 'http://'+ api_endpoint + ':8676'
 
     try:
@@ -269,14 +300,16 @@ def api_endpoint_check(api_endpoint):
         frame,filename,line_number,function_name,lines,index = source_frame
         source_func = source_frame[3]
 
-        if source_func == 'print_intro':
+        if source_func in ['intro', 'get_endpoint']:
             try:
                 domain_check = requests.get(root_uri + '/REST/Domain/Online')
                 domain_check_rsp = domain_check.json()
                 api_endpoint_status = domain_check_rsp['Online']
 
                 if api_endpoint_status is not True:
-                    api_endpoint_status = "\n\n{} is not active or unreachable, please check the Vantage SDK service on the host and try again.".format(api_endpoint.upper()) + "\n\n" + str(err) + "\n\n"
+                   api_endpoint_status_msg = f"\n\n{endpoint.upper()} is not active or unreachable, \
+                        please check the Vantage SDK service on the host.\n"
+                   logger.info(api_endpoint_status_msg)
                 else:
                     pass
 
@@ -287,12 +320,11 @@ def api_endpoint_check(api_endpoint):
                 print("Exception Message #1:" + eexcp_msg1)
                 print(api_endpoint_status)
 
-
             return api_endpoint_status
 
 
-        elif source_func in ['check_vantage_status', 'check_domain_load', 'check_job_queue', 'api_submit', 'job_submit']:
-
+        elif source_func in ['get_endpoint','check_vantage_status', 'check_domain_load', 
+                            'check_job_queue', 'api_submit', 'job_submit']:
             try:
                 domain_check = requests.get(root_uri + '/REST/Domain/Online')
                 domain_check_rsp = domain_check.json()
@@ -300,7 +332,14 @@ def api_endpoint_check(api_endpoint):
 
                 if api_endpoint_status == True:
                     return api_endpoint
-
+                
+                elif (api_endpoint_status != True
+                    and source_func == 'get_endpoint'):
+                    return False
+                
+                elif (api_endpoint_status == True
+                      and source_func == 'get_endpoint'):
+                    return True
                 else:
                     api_endpoint = api_endpoint_failover(api_endpoint)
 
@@ -359,3 +398,7 @@ def api_endpoint_failover(api_endpoint):
                     continue
 
         return api_endpoint
+
+
+if __name__ == '__main__':
+    get_endpoint()
