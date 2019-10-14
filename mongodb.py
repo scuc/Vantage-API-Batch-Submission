@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 client = pymongo.MongoClient("mongodb://localhost:27017")
 
 
-def create_doc(job_id, api_endpoint):
+def create_doc(job_id, endpoint):
 
     db = client.vantage
     collection = db.dalet
 
-    document_get = requests.get('http://' + str(api_endpoint) + ':8676/REST/Jobs/' + job_id)
+    document_get = requests.get('http://' + str(endpoint) + ':8676/REST/Jobs/' + job_id)
 
     document = document_get.json()
     document = document["Job"]
@@ -64,7 +64,7 @@ def set_values(job):
     return job
 
 
-def update_db(api_endpoint, target_workflow_id):
+def update_db(endpoint, target_workflow_id):
 
     db = client.vantage
     collection = db.dalet
@@ -73,7 +73,7 @@ def update_db(api_endpoint, target_workflow_id):
 
     if doc_count is not 0:
 
-        job_get = requests.get('http://' + str(api_endpoint) + ':8676/REST/Workflows/' + target_workflow_id + '/Jobs/?filter={All}')
+        job_get = requests.get('http://' + str(endpoint) + ':8676/REST/Workflows/' + target_workflow_id + '/Jobs/?filter={All}')
 
         # with open('joblist.json') as json_data:
         #     d = json.load(json_data)
@@ -103,24 +103,24 @@ def update_db(api_endpoint, target_workflow_id):
                     collection.update_one(query, values)
                     print('updating now')
                 else:
-                    create_doc(job['Identifier'], api_endpoint)
+                    create_doc(job['Identifier'], endpoint)
 
                 if state == 4:
-                    error_get = requests.get('http://' + str(api_endpoint) + ':8676/REST/Jobs/' + identifier + '/ErrorMessage')
+                    error_get = requests.get('http://' + str(endpoint) + ':8676/REST/Jobs/' + identifier + '/ErrorMessage')
                     error_dict = error_get.json()
                     error_msg = error_dict['JobErrorMessage']
                     values = {"$set": {"ErrorMessage": error_msg}}
                     collection.update_one(query, values)
 
                 if state == 5:
-                    output_get = requests.get('http://' + str(api_endpoint) + ':8676/REST/Jobs/' + identifier + '/Outputs')
+                    output_get = requests.get('http://' + str(endpoint) + ':8676/REST/Jobs/' + identifier + '/Outputs')
                     output_dict = output_get.json()
                     output_msg = output_dict['Medias'][0]['Files']
                     values = {"$set": {"OutputFiles": output_msg}}
                     collection.update_one(query, values)
 
                 if state in [6,7,8]:
-                    metrics_get = requests.get('http://' + str(api_endpoint) + ':8676/REST/Jobs/' + identifier + '/Metrics')
+                    metrics_get = requests.get('http://' + str(endpoint) + ':8676/REST/Jobs/' + identifier + '/Metrics')
                     metrics_blob = metrics_get.json()
                     total_queue_time = metrics_blob['TotalQueueTimeInSeconds']
                     total_run_time = metrics_blob['TotalRunTimeInSeconds']

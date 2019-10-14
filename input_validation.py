@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 config = cfg.get_config()
 
-api_endpoint_list = config['endpoint_list']
+endpoint_list = config['endpoint_list']
 root_dir_posix = config['paths']['root_dir_posix']
 
 
