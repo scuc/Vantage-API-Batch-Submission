@@ -18,9 +18,11 @@ import system_checks as sysch
 
 config = cfg.get_config()
 
-api_endpoint_list = config['endpoint_list']
+endpoint_list = config['endpoint_list']
 root_dir_win = config['paths']['root_dir_win']
 root_dir_posix = config['paths']['root_dir_posix']
+
+endpoint = sysch.get_endpoint()
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +39,7 @@ def submit_control(submit_frequency, jobs_per_submit, source_dir, target_workflo
     os_platform = inpval.platform_check()
 
     if os_platform == 'Darwin':
-        posix_path = make_posix_path(source_dir)
+        posix_path = inpval.make_posix_path(source_dir)
         p = Path(posix_path)
     else:
         pass
@@ -71,7 +73,7 @@ def submit_control(submit_frequency, jobs_per_submit, source_dir, target_workflo
             if file_match is not None:
                 file_submit_msg = f"Submitting: {vid_file}"
                 print(file_submit_msg)
-                job_submit(target_workflow_id, source_dir, api_endpoint, vid_file)
+                job_submit(target_workflow_id, source_dir, endpoint, vid_file)
                 files_submitted += 1
                 list_number += 1
             else:
@@ -95,13 +97,13 @@ def submit_control(submit_frequency, jobs_per_submit, source_dir, target_workflo
     jobs_complete(files_submitted, files_skipped)
 
 
-def job_submit(target_workflow_id, source_dir, api_endpoint, vid_file):
+def job_submit(target_workflow_id, source_dir, endpoint, vid_file):
     '''Submit the file to the workflow, using the REST API.'''
 
-    api_endpoint = api_endpoint_check(api_endpoint)
-    api_endpoint = check_vantage_status(target_workflow_id, api_endpoint)
+    # endpoint = endpoint_check(endpoint)
+    # endpoint = check_vantage_status(target_workflow_id, endpoint)
 
-    root_uri = "http://" + api_endpoint + ":8676"
+    root_uri = "http://" + endpoint + ":8676"
 
     while True:
         try:
@@ -123,7 +125,7 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, vid_file):
 
             # sleep gives Vantage job time to set values.
             time.sleep(1)
-            document = db.create_doc(job_id, api_endpoint)
+            document = db.create_doc(job_id, endpoint)
 
             document_msg = f"{document}"
             logger.info("Job values submitted to db: " + document_msg)
@@ -133,11 +135,11 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, vid_file):
         except requests.exceptions.RequestException as excp:
             jobsubmit_excp_msg = f"Exception raised on a Vantage Job Submit."
             logger.exception(jobsubmit_excp_msg)
-            api_endpoint = api_endpoint_failover(api_endpoint)
-            job_submit(target_workflow_id, source_dir, api_endpoint, vid_file)
+            # endpoint = endpoint_failover(endpoint)
+            # job_submit(target_workflow_id, source_dir, endpoint, vid_file)
             break
 
-    return api_endpoint
+    return endpoint
 
 
 if __name__ == '__main__':
