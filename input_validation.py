@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 
 import logging
+import os
+import platform
+import re
 import requests
 
 import config as cfg
 
 from operator import itemgetter
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from time import localtime, strftime
 
 logger = logging.getLogger(__name__)
@@ -13,7 +17,7 @@ logger = logging.getLogger(__name__)
 config = cfg.get_config()
 
 api_endpoint_list = config['endpoint_list']
-
+root_dir_posix = config['paths']['root_dir_posix']
 
 
 def platform_check():
@@ -49,7 +53,7 @@ def clean_datetimes(date_str):
                 clean_st = date_str
                 break
         except ValueError:
-            print("{} is not a valid entry for start time, try again.".format(date_str))
+            print(f"{date_str} is not a valid entry for start time, try again.")
             continue
 
     return clean_st
@@ -64,7 +68,6 @@ def make_posix_path(source_dir):
 
 def path_validation(source_dir):
     '''Validate the user input for the watch folder file path.'''
-    global os_platform
     os_platform = platform_check()
     source_dir_list = re.findall(r"[\w']+", source_dir)
 
@@ -83,4 +86,5 @@ def path_validation(source_dir):
     return valid_path
 
 
-if __name__ == '__main__'
+if __name__ == '__main__':
+    clean_datetimes()
