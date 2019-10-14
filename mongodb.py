@@ -1,5 +1,6 @@
 
 import json
+import logging
 import pprint
 import pymongo
 import requests
@@ -135,6 +136,11 @@ def update_db(api_endpoint, target_workflow_id):
     return
 
 # update_db("lightspeed1","31441afe-a641-48b8-a34c-40bdb2b03672/")
+
+
+if __name__ == '__main__':
+    update_db("lightspeed1", "31441afe-a641-48b8-a34c-40bdb2b03672/")
+
 
 '''
 =======================================================================
