@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 
-import inspect
 import logging
 import os
 import platform
 import re
 import requests
-import time
 
 from datetime import datetime
 from pathlib import Path, PurePosixPath, PureWindowsPath
+from subprocess import call
 from time import localtime, strftime
 
 import system_checks as syschk
@@ -98,8 +97,8 @@ def intro():
             break
 
     while True:
-        api_endpoint = syschk.get_endpoint()
-        root_uri = 'http://'+ api_endpoint + ':8676'
+        endpoint = syschk.get_endpoint()
+        root_uri = 'http://'+ endpoint + ':8676'
         target_workflow_id = str(input("The Vantage Workflow ID: "))
         try:
             id_request = requests.get(root_uri + '/REST/workflows/'+ target_workflow_id)
@@ -113,7 +112,7 @@ def intro():
                 break
         except requests.exceptions.RequestException as err:
             print(
-                f"\nError: Please verify that the Vantage SDK Service is started and reachable on {api_endpoint}.\n\n\
+                f"\nError: Please verify that the Vantage SDK Service is started and reachable on {endpoint}.\n\n\
                     Error Message: {str(err)} \n\n")
 
     while True:
