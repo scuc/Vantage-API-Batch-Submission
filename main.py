@@ -7,7 +7,11 @@ import yaml
 
 import config as cfg
 import get_user_input as gui
-import api_auto_submit as api
+import api_submit as api
+
+from datetime import datetime
+from subprocess import call
+from time import localtime, strftime, sleep
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +52,9 @@ def countdown(start_time):
         timeformat = '{:02d}:{:02d}:{:02d}'.format(
             int(hours), int(mins), int(secs))
         print("Job Sumission Starts In: " + str(timeformat), end='\r')
-        time.sleep(1)
+        sleep(1)
         tds -= 1
-    time.sleep(1)
+    sleep(1)
     clear()
     print("")
     print("\n================ Starting Now =================\n")
