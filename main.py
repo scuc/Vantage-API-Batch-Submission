@@ -89,7 +89,7 @@ def vantage_main():
 
     countdown(start_time)
 
-    api.submit(
+    api.submit_control(
                 submit_frequency, 
                 jobs_per_submit, 
                 source_dir, 
