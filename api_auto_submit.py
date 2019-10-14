@@ -21,7 +21,7 @@ from time import localtime, strftime
 import system_checks as sysch
 
 
-api_endpoint_list = ['LIGHTSPEED1', 'LIGHTSPEED2', 'LIGHTSPEED3',
+endpoint_list = ['LIGHTSPEED1', 'LIGHTSPEED2', 'LIGHTSPEED3',
                     'LIGHTSPEED4','LIGHTSPEED5', 'LIGHTSPEED6', 'LIGHTSPEED7',
                     'FNDC-VANLSG6-08','FNDC-VANLSG6-09', 'FNDC-VANLSG6-10',
                     'FNDC-VANLSG6-11'
@@ -61,7 +61,7 @@ def countdown(start_time):
 # ==================== API SUBMIT STARTS HERE ============================= #
 
 
-def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, api_endpoint, target_workflow_id):
+def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rotation, source_dir, endpoint, target_workflow_id):
 
     jobs_per_hour = (60 / submit_frequency) * jobs_per_submit
     total_jobs = jobs_per_hour * total_duration
@@ -103,7 +103,7 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
             if file_match is not None:
                 file_submit_msg = f"Submitting: {file}"
                 print(file_submit_msg)
-                job_submit(target_workflow_id, source_dir, api_endpoint, file)
+                job_submit(target_workflow_id, source_dir, endpoint, file)
                 files_submitted += 1
                 list_number += 1
             else:
@@ -127,13 +127,13 @@ def api_submit(total_duration, submit_frequency, jobs_per_submit, sources_in_rot
     jobs_complete(files_submitted, files_skipped)
 
 
-def job_submit(target_workflow_id, source_dir, api_endpoint, file):
+def job_submit(target_workflow_id, source_dir, endpoint, file):
     '''Submit the file to the workflow, using the REST API.'''
 
-    api_endpoint = api_endpoint_check(api_endpoint)
-    api_endpoint = check_vantage_status(target_workflow_id, api_endpoint)
+    endpoint = endpoint_check(endpoint)
+    endpoint = check_vantage_status(target_workflow_id, endpoint)
 
-    root_uri = "http://" + api_endpoint + ":8676"
+    root_uri = "http://" + endpoint + ":8676"
 
     while True:
         try:
@@ -155,7 +155,7 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
 
             # sleep gives Vantage job time to set values.
             time.sleep(1)
-            document = db.create_doc(job_id, api_endpoint)
+            document = db.create_doc(job_id, endpoint)
 
             document_msg = f"{document}"
             logger.info("Job values submitted to db: " + document_msg)
@@ -167,8 +167,8 @@ def job_submit(target_workflow_id, source_dir, api_endpoint, file):
             logger.exception(jobsubmit_excp_msg)
             print(jobsubmit_excp_msg)
             print(str(excp))
-            api_endpoint = api_endpoint_failover(api_endpoint)
-            job_submit(target_workflow_id, source_dir, api_endpoint, file)
+            endpoint = endpoint_failover(endpoint)
+            job_submit(target_workflow_id, source_dir, endpoint, file)
             break
 
-    return api_endpoint
+    return endpoint
