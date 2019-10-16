@@ -36,17 +36,13 @@ def check_vantage_status(target_workflow_id, endpoint):
     2 check count is not a multiple of 10
     """
 
-    global job_check_count
     job_check_count = 0
 
     while True:
 
         try:
-            endpoint = endpoint_check(endpoint)
             domain_load = check_domain_load(job_check_count, endpoint)
             job_queue = check_job_queue(target_workflow_id, endpoint, job_check_count)
-
-            print("API_ENDPOINT: " + endpoint)
 
             db.update_db(endpoint, target_workflow_id)
 
@@ -86,7 +82,6 @@ def check_vantage_status(target_workflow_id, endpoint):
                 Job submission is paused until the system load decreases.\n\
                 ===========================================================\n"
                 logger.info(msg1)
-                print(msg1)
 
             elif status_val in msg2_list:
                 msg2 =f"\n\
@@ -95,7 +90,6 @@ def check_vantage_status(target_workflow_id, endpoint):
                 Domain Load:   {str(domain_load[1])}\n\
                 "
                 logger.info(msg2)
-                print(msg2)
 
             elif status_val in msg3_list:
                 msg3 =f"\n\
@@ -107,7 +101,6 @@ def check_vantage_status(target_workflow_id, endpoint):
                 ===========================================================\n\
                 "
                 logger.info(msg3)
-                print(msg3)
 
             else:
                 break
@@ -118,8 +111,6 @@ def check_vantage_status(target_workflow_id, endpoint):
         except Exception as excp:
             vanstatus_excp_msg = f"Exception raised on a Vantage Dominan Status check."
             logger.exception(vanstatus_excp_msg)
-            print(vanstatus_excp_msg)
-            print(str(excp))
 
             if Exception is requests.exceptions.RequestException:
                 endpoint = endpoint_check(endpoint)
@@ -135,7 +126,6 @@ def check_domain_load(job_check_count, endpoint):
 
     try:
         endpoint = endpoint_check(endpoint)
-        global root_uri
         root_uri = "http://" + str(endpoint) + ":8676/"
 
         cpu = requests.get(root_uri + '/Rest/Domain/Load/CPU')
@@ -158,7 +148,6 @@ def check_domain_load(job_check_count, endpoint):
             count += 1
 
         get_load = itemgetter(1)
-        global sorted_serviceload_list
         sorted_serviceload_list = sorted(service_load_list, key=get_load, reverse=True)
 
         high_load_list = []
@@ -171,7 +160,6 @@ def check_domain_load(job_check_count, endpoint):
                 else:
                     low_load_list.append(service_num)
 
-        global domain_load_val
         domain_load_val = 0
 
         if len(high_load_list) > 0:
@@ -182,11 +170,6 @@ def check_domain_load(job_check_count, endpoint):
     except requests.exceptions.RequestException as excp:
         domainck_excp_msg = f"Exception raised on a Vantage Dominan Load check."
         logger.exception(domainck_excp_msg)
-        print(domainck_excp_msg)
-        print(str(excp))
-
-        endpoint = endpoint_failover(endpoint)
-        check_domain_load(job_check_count, endpoint)
 
     return [domain_load_val, sorted_serviceload_list]
 
@@ -223,7 +206,7 @@ def check_job_queue(target_workflow_id, endpoint, job_check_count):
             print(jobqueue_excp_msg)
             print(str(excp))
 
-            endpoint = endpoint_failover(endpoint)
+            endpoint = get_endpoint()
             check_domain_load(job_check_count, endpoint)
 
     return [job_queue_val, active_job_count]
@@ -278,15 +261,21 @@ def get_endpoint():
     """
     for endpoint in endpoint_list: 
         try: 
-            print(endpoint)
             endpoint_status = endpoint_check(endpoint)
+
             if endpoint_status != True: 
+                endpoint_status_msg = f"\n\n{endpoint.upper()} is not active or unreachable, \
+                        please check the Vantage SDK service on the host.\n"
                 continue
             else:
-                endpoint = endpoint
+                print(endpoint)
+                endpoint_status_msg = f"\n\n{endpoint.upper()} online status is confirmed.\n"
                 return endpoint
+
+            logger.info(endpoint_status_msg)
+
         except Exception as e:
-            get_ep_exception_msg = f"Unable to reach any available Vantage Endpoints."
+            get_ep_exception_msg2 = f"Unable to reach any available Vantage Endpoints."
             logger.error(get_ep_exception_msg)
 
 
@@ -295,112 +284,29 @@ def endpoint_check(endpoint):
 
     root_uri = 'http://'+ endpoint + ':8676'
 
-    try:
-        source_frame = inspect.stack()[1]
-        frame,filename,line_number,function_name,lines,index = source_frame
-        source_func = source_frame[3]
-        print("SOURCE FUNC: " + str(source_func))
+    source_frame = inspect.stack()[1]
+    frame,filename,line_number,function_name,lines,index = source_frame
+    source_func = source_frame[3]
 
-        if source_func in ['intro', 'get_endpoint']:
-            try:
-                domain_check = requests.get(root_uri + '/REST/Domain/Online')
-                domain_check_rsp = domain_check.json()
-                
-                endpoint_status = domain_check_rsp['Online']
-                print("API ENDPOINT STATUS: " + str(endpoint_status))
-                if endpoint_status is not True:
-                   endpoint_status_msg = f"\n\n{endpoint.upper()} is not active or unreachable, \
-                        please check the Vantage SDK service on the host.\n"
-                   logger.info(endpoint_status_msg)
-                else:
-                    pass
+    if source_func in ['intro', 'get_endpoint', 'check_vantage_status', 'check_domain_load',
+                        'check_job_queue', 'api_submit', 'job_submit']:
+        try: 
+            domain_check = requests.get(
+                    root_uri + '/REST/Domain/Online')
+            domain_check_rsp = domain_check.json()
+            endpoint_status = domain_check_rsp['Online']
 
-            except requests.exceptions.RequestException as excp:
-                excp_msg1 = f"Exception raised on API endpoint check."
-                logger.exception(excp_msg1)
-                endpoint_status = str(excp)
-                print("Exception Message #1:" + eexcp_msg1)
-                print(endpoint_status)
+        except requests.exceptions.RequestException as excp:
+            excp_msg2 = f"Exception raised on API endpoint check."
+            logger.exception(excp_msg2)
+            endpoint_status = ("error")
 
-            return endpoint_status
+    else: 
+        sourcefunc_msg = f"{source_func} is not in the list of endpoint functions."
+        logger.info(sourcefunc_msg)
 
-
-        elif source_func in ['get_endpoint','check_vantage_status', 'check_domain_load', 
-                            'check_job_queue', 'api_submit', 'job_submit']:
-            try:
-                domain_check = requests.get(root_uri + '/REST/Domain/Online')
-                domain_check_rsp = domain_check.json()
-                endpoint_status = domain_check_rsp['Online']
-
-                if endpoint_status == True:
-                    return endpoint
-                
-                elif (endpoint_status != True
-                    and source_func == 'get_endpoint'):
-                    return False
-                
-                elif (endpoint_status == True
-                      and source_func == 'get_endpoint'):
-                    return True
-                else:
-                    endpoint = endpoint_failover(endpoint)
-
-            except requests.exceptions.RequestException as excp:
-                excp_msg2 = f"Exception raised on API endpoint check."
-                logger.exception(excp_msg2)
-                endpoint_status = str(excp)
-                print(excp_msg2)
-                print("Exception Message #2:" + eendpoint_status)
-                endpoint = endpoint_failover(endpoint)
-                return endpoint
-
-        else:
-            endpoint = endpoint_failover(endpoint)
-
-    except Exception as excp:
-        excp_msg3 = f"Exception raised on API endpoint check."
-        logger.exception(excp_msg3)
-        endpoint_status = str(excp)
-        print("Exception Message #3:" + excp_msg3)
-        print(endpoint_status)
-
-
-def endpoint_failover(endpoint):
-
-        while True:
-            try:
-                api_fail = f"\n\
-                =======================================================\
-                {str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))} \
-                Removing {endpoint} from the list of available api endpoints.\
-                Attempting to switch to a new API Endpoint now.\
-                =======================================================\
-                "
-                logger.info(api_fail)
-                print(api_fail)
-
-                new_endpoint = endpoint_list[0]
-                endpoint = new_endpoint
-                root_uri = "http://" + endpoint + ":8676/"
-
-                api_new = f"\
-                Switching to new API Endpoint:  {endpoint}"
-                logger.info(api_new)
-                print(api_new)
-                break
-
-            except requests.exceptions.RequestException as err:
-                print("\n{} is not active or unreachable, trying another endpoint.".format(new_endpoint) + "\n" + str(err))
-                if len(endpoint_list) > 1:
-                    endpoint_list.remove(endpoint)
-                    continue
-                else:
-                    print("Vantage cannot find an available api endpoint. Please check the Vantage SDK service on the Lighspeed servers is started and reachable.\n")
-                    print("After confirming an available API Enpoint, please hit return to contine.")
-                    continue
-
-        return endpoint
+    return endpoint_status
 
 
 if __name__ == '__main__':
-    endpoint_check('LIGHTSPEED1')
+    get_endpoint()
