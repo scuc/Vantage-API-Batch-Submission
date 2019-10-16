@@ -165,10 +165,6 @@ def job_submit(target_workflow_id, source_dir, endpoint, file):
         except requests.exceptions.RequestException as excp:
             jobsubmit_excp_msg = f"Exception raised on a Vantage Job Submit."
             logger.exception(jobsubmit_excp_msg)
-            print(jobsubmit_excp_msg)
-            print(str(excp))
-            endpoint = endpoint_failover(endpoint)
-            job_submit(target_workflow_id, source_dir, endpoint, file)
             break
 
     return endpoint
