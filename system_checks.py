@@ -3,8 +3,10 @@
 import inspect
 import logging
 import requests
+import time
 
 import config as cfg
+import mongodb as db
 
 from operator import itemgetter
 from time import localtime, strftime
@@ -57,6 +59,12 @@ def check_vantage_status(target_workflow_id, endpoint):
             else:
                 job_count_val = 2
 
+            print(job_queue)
+            print("")
+            print(domain_load)
+            print("")
+            print(job_count_val)
+
             status_val = [job_queue[0], domain_load[0], job_count_val]
 
             # break_list = [[0,0,0],[0,0,1],[1,0,1],[0,0,2],[1,0,2],[1,0,0]]
@@ -68,10 +76,6 @@ def check_vantage_status(target_workflow_id, endpoint):
             msg1_list = [[0,1,0],[0,1,1],[1,0,0],[1,1,0]]
             msg2_list = [[0,1,2],[1,0,2],[1,1,2]]
             msg3_list = [[1,0,1],[1,1,1]]
-
-            # print("")
-            # print("STATUS START" + str(status_val))
-            # print("")
 
             if status_val in msg1_list:
                 msg1 = f"\n\
@@ -125,8 +129,7 @@ def check_domain_load(job_check_count, endpoint):
     '''Get a Domain Load based on Transcode, CPU, Edit, and Analysis'''
 
     try:
-        endpoint = endpoint_check(endpoint)
-        root_uri = "http://" + str(endpoint) + ":8676/"
+        root_uri = "http://" + endpoint + ":8676"
 
         cpu = requests.get(root_uri + '/Rest/Domain/Load/CPU')
         transcode = requests.get(root_uri + '/Rest/Domain/Load/Transcode')
@@ -154,7 +157,6 @@ def check_domain_load(job_check_count, endpoint):
         low_load_list = []
 
         for service_num in sorted_serviceload_list:
-                # print("SERVICE NUM:" + str(service_num[1]))
                 if service_num[1] > 80:
                     high_load_list.append(service_num)
                 else:
@@ -179,9 +181,7 @@ def check_job_queue(target_workflow_id, endpoint, job_check_count):
 
     while True:
         try:
-            endpoint = endpoint_check(endpoint)
-            global root_uri
-            root_uri = "http://" + str(endpoint) + ":8676/"
+            root_uri = "http://" + endpoint + ":8676"
 
             get_job_status = requests.get(root_uri + '/REST/Workflows/' + target_workflow_id + '/Jobs/?filter=Active')
 
@@ -203,11 +203,10 @@ def check_job_queue(target_workflow_id, endpoint, job_check_count):
         except requests.exceptions.RequestException as excp:
             jobqueue_excp_msg = f"Exception raised on a Vantage Job Queue check."
             logger.exception(jobqueue_excp_msg)
-            print(jobqueue_excp_msg)
-            print(str(excp))
 
             endpoint = get_endpoint()
             check_domain_load(job_check_count, endpoint)
+            continue
 
     return [job_queue_val, active_job_count]
 
@@ -268,7 +267,6 @@ def get_endpoint():
                         please check the Vantage SDK service on the host.\n"
                 continue
             else:
-                print(endpoint)
                 endpoint_status_msg = f"\n\n{endpoint.upper()} online status is confirmed.\n"
                 return endpoint
 
@@ -297,7 +295,7 @@ def endpoint_check(endpoint):
             endpoint_status = domain_check_rsp['Online']
 
         except requests.exceptions.RequestException as excp:
-            excp_msg2 = f"Exception raised on API endpoint check."
+            excp_msg2 = f"\n\n Exception raised on API check for endpoint:  {endpoint}.\n\n"
             logger.exception(excp_msg2)
             endpoint_status = ("error")
 
@@ -309,4 +307,4 @@ def endpoint_check(endpoint):
 
 
 if __name__ == '__main__':
-    get_endpoint()
+    check_vantage_status('31441afe-a641-48b8-a34c-40bdb2b03672', 'LIGHTSPEED1')
