@@ -93,6 +93,8 @@ def update_db(endpoint, target_workflow_id):
             state = job['State']
             updated = job['Updated']
 
+            print([identifier, ismonitor, name, started, state, updated])
+
             try:
                 count = collection.count_documents({"Identifier": identifier})
 
@@ -115,8 +117,13 @@ def update_db(endpoint, target_workflow_id):
                 if state == 5:
                     output_get = requests.get('http://' + str(endpoint) + ':8676/REST/Jobs/' + identifier + '/Outputs')
                     output_dict = output_get.json()
-                    output_msg = output_dict['Medias'][0]['Files']
-                    values = {"$set": {"OutputFiles": output_msg}}
+                    pprint.pprint(output_dict)
+                    if  len(output_dict['Medias']) == 0: 
+                        values = {"$set": {"OutputFiles": []}}
+                    else: 
+                        output_msg = output_dict['Medias'][0]['Files']
+                        values = {"$set": {"OutputFiles": output_msg}}
+                    
                     collection.update_one(query, values)
 
                 if state in [6,7,8]:
@@ -142,13 +149,12 @@ if __name__ == '__main__':
     update_db("lightspeed1", "31441afe-a641-48b8-a34c-40bdb2b03672/")
 
 
-'''
+"""
 =======================================================================
                 JOB VALUE INFORMATION
 =======================================================================
-'''
 
-'''
+
 Identifier = Guid  The unique identifier for the job.
 
 IsMonitor =
@@ -158,9 +164,8 @@ Name = String  The job name
 Started = DateTime The timestamp of when the job was created.
 State = JobState The current state of the job (see below)
 Updated DateTime = The timestamp of when the job was last updated.
-'''
 
-'''
+
 Job State Value Meaning
 
 0 = In Process - The job is currently active and in-process (it contains actions which are currently being processed).
@@ -176,14 +181,12 @@ Job State Value Meaning
 8 = Waiting to Retry
 The job has entered a state where the remaining actions are waiting to be retried. This is typically the result of a Retry rules being applied to one or more actions in a job (eg: retry an FTP transfer after 10 minutes if the target site is not accessible).'''
 
-'''
 {'Identifier': '0566d9d0-515f-4590-b3be-a718e5c9f530',
 'IsMonitor': False,
 'Name': '8228266.mov',
 'Started': '/Date(1549019142830-0500)/',
 'State': 5,
 'Updated': '/Date(1549019770647-0500)/'}]}
-
 
 job_info = {'Attachments': [],
  'JobName': '9469852.mov',
@@ -198,4 +201,5 @@ job_info = {'Attachments': [],
              'Name': 'Original'}],
  'Priority': 0,
  'Variables': []}
-'''
+ 
+"""
