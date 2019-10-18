@@ -81,7 +81,7 @@ def submit_control(submit_frequency, jobs_per_submit, source_dir, target_workflo
                 logger.debug(file_skip_msg)
                 print(file_skip_msg)
                 files_skipped += 1
-                list_number += 1
+                # list_number += 1
                 continue
 
         except Exception as excp:
@@ -100,46 +100,64 @@ def submit_control(submit_frequency, jobs_per_submit, source_dir, target_workflo
 def job_submit(target_workflow_id, source_dir, endpoint, vid_file):
     '''Submit the file to the workflow, using the REST API.'''
 
-    # endpoint = endpoint_check(endpoint)
-    # endpoint = check_vantage_status(target_workflow_id, endpoint)
+    endpoint_status = sysch.endpoint_check(endpoint)
+    endpoint = sysch.check_vantage_status(target_workflow_id, endpoint)
 
     root_uri = "http://" + endpoint + ":8676"
 
-    while True:
-        try:
-            job_get = requests.get(root_uri + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
-            if job_get is not None:
-                    job_dict = job_get.json()
-                    job_dict['JobName'] = vid_file
-                    job_dict['Medias'][0]['Files'][0] = source_dir + vid_file
-            else:
-                continue
+    while True: 
+        if endpoint_status == True: 
+            try:
+                job_get = requests.get(root_uri + '/REST/Workflows/' + target_workflow_id + '/JobInputs')
+                if job_get is not None:
+                        job_dict = job_get.json()
+                        job_dict['JobName'] = vid_file
+                        job_dict['Medias'][0]['Files'][0] = source_dir + vid_file
+                else:
+                    continue
 
-            job_post = requests.post(root_uri + '/REST/Workflows/' + target_workflow_id + '/Submit',json=job_dict)
+                job_post = requests.post(root_uri + '/REST/Workflows/' + target_workflow_id + '/Submit',json=job_dict)
 
-            job_post_response = job_post.json()
+                job_post_response = job_post.json()
 
-            job_id = job_post_response['JobIdentifier']
-            job_id_msg = f"Submitting {vid_file} | job id: {job_id}"
-            logger.info(job_id_msg)
+                job_id = job_post_response['JobIdentifier']
+                job_id_msg = f"Submitting {vid_file} | job id: {job_id}"
+                logger.info(job_id_msg)
 
-            # sleep gives Vantage job time to set values.
-            time.sleep(1)
-            document = db.create_doc(job_id, endpoint)
+                # sleep gives Vantage job time to set values.
+                time.sleep(1)
+                document = db.create_doc(job_id, endpoint)
 
-            document_msg = f"{document}"
-            logger.info("Job values submitted to db: " + document_msg)
+                document_msg = f"{document}"
+                logger.info("Job values submitted to db: " + document_msg)
 
-            break
+                break
 
-        except requests.exceptions.RequestException as excp:
-            jobsubmit_excp_msg = f"Exception raised on a Vantage Job Submit."
-            logger.exception(jobsubmit_excp_msg)
-            # endpoint = endpoint_failover(endpoint)
-            # job_submit(target_workflow_id, source_dir, endpoint, vid_file)
-            break
+            except requests.exceptions.RequestException as excp:
+                jobsubmit_excp_msg = f"Exception raised on a Vantage Job Submit."
+                logger.exception(jobsubmit_excp_msg)
+                break
+        
+        else: 
+            endpoint = get_endpoint()
+            continue
 
     return endpoint
+
+
+def jobs_complete(files_submitted, files_skipped):
+    '''Print a summary message in the terminal window at the end of the batch run.'''
+
+    complete_msg = f"\n\
+    ==================================================================\n\
+                           Jobs Complete!                      \n\
+    {str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))} \n\
+    {str(files_submitted - files_skipped)} files were submitted. \n\
+    {str(files_skipped)} files were skipped. \n\
+    ==================================================================\n\
+    "
+    logger.info(complete_msg)
+    print(complete_msg)
 
 
 if __name__ == '__main__':
