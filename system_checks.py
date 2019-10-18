@@ -2,6 +2,7 @@
 
 import inspect
 import logging
+import pprint
 import requests
 import time
 
@@ -106,8 +107,12 @@ def check_vantage_status(target_workflow_id, endpoint):
                 "
                 logger.info(msg3)
 
-            else:
+            elif status_val in break_list:
                 break
+
+            else: 
+                msg4 = f"Unknown Vantage Status - Status Value: {status_val}"
+                logger.info(msg4)
 
             time.sleep(60)
             job_check_count += 1
@@ -188,6 +193,10 @@ def check_job_queue(target_workflow_id, endpoint, job_check_count):
             active_jobs_json = get_job_status.json()
             active_job_count = len(active_jobs_json['Jobs'])
 
+            pprint.pprint(active_jobs_json)
+            print("")
+            print(active_job_count)
+
             if active_job_count <= 3:
                 job_queue_val = 0
                 break
@@ -208,6 +217,7 @@ def check_job_queue(target_workflow_id, endpoint, job_check_count):
             check_domain_load(job_check_count, endpoint)
             continue
 
+    print([job_queue_val, active_job_count])
     return [job_queue_val, active_job_count]
 
 
@@ -234,21 +244,6 @@ def check_job_state(files_submitted, jobs_per_submit):
             pass
 
     return failed_jobs, sucessful_jobs
-
-
-def jobs_complete(files_submitted, files_skipped):
-    '''Print a summary message in the terminal window at the end of the batch run.'''
-
-    complete_msg = f"\n\
-    ==================================================================\n\
-                           Jobs Complete!                      \n\
-    {str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))} \n\
-    {str(files_submitted - files_skipped)} files were submitted. \n\
-    {str(files_skipped)} files were skipped. \n\
-    ==================================================================\n\
-    "
-    logger.info(complete_msg)
-    print(complete_msg)
 
 
 # ===================== API ENPOINTS CHECKS ======================= #
@@ -307,4 +302,4 @@ def endpoint_check(endpoint):
 
 
 if __name__ == '__main__':
-    check_vantage_status('31441afe-a641-48b8-a34c-40bdb2b03672', 'LIGHTSPEED1')
+    check_job_queue('4dbb66db-e914-4b14-bb49-d171ef818dac', 'LIGHTSPEED1', 1)
